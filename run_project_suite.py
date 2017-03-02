@@ -1,64 +1,72 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (c) 2016 Cacti Council Inc.
 
 import argparse
-import shutil
-import os
-import sys
-import subprocess
-import hashlib
-import tempfile
-
 import ctypes
-from ctypes import util
-from subprocess import Popen, PIPE, STDOUT, check_output
-import test_configuration as config
-from os import path
+import glob
+import hashlib
+import os
+import shutil
+import sys
+import tempfile
+import subprocess
+
+import ctypes.util as c_util
+import distutils.dir_util as dir_util
+import importlib.util as import_util
+
+
+cfg = argparse.Namespace()
+cfg.runtime = argparse.Namespace()
+
+cfg.runtime.prep_cmd = ["cmake"]#, "-G", "Unix Makefiles"
+cfg.runtime.build_cmd = ["make", "all"]
+#cfg.build_cmd = ["devenv", "TestProgram.sln", "/Build Release"]
+
 
 def info(message):
-    if not config.isQuiet:
+    if not cfg.runtime.quiet:
         sys.stdout.write(message)
 
-def parseArguments(config_object):
 
-    # handle command line args
+# handle command line args
+def parseArguments():
+    global config
     parser = argparse.ArgumentParser(description='A program to run a set of tests for a programming assignment.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_help = True
-    parser.add_argument('path', nargs='?', default="Projects", help='path of the projects to consider (by subdirectory / folder)')
+    parser.add_argument('test_path', nargs='?', default="./", help='path of test suite to load')
+    parser.add_argument('target_path', nargs='?', default=None, help='path of the target projects to consider (by subdirectory / folder)')
     parser.add_argument('-V', '--version', action='version', version='%(prog)s 0.1')
     parser.add_argument('-q', '--quiet', dest='quiet', action='store_true', help='execute in quiet mode')
     parser.add_argument('-d', '--debug', dest='debug', action='store_true', help='display debug information')
-    args = parser.parse_args()
-    config_object.submissionPath = args.path
+    cfg.runtime = parser.parse_args(sys.argv[1:], cfg.runtime)
 
-    if args.quiet:
-        config_object.isQuiet = True
-    if args.debug:
-        config_object.isDebugging = True
+    if not cfg.runtime.target_path:
+        cfg.runtime.target_path = os.path.join(cfg.runtime.test_path, "Projects")
 
     # debug program
-    if config_object.isDebugging:
-        print "SYSTEM"
-        print sys.version
-        print
+    if cfg.runtime.debug:
+        print("SYSTEM ", sys.version)
+
     return
 
-def determineEnvironment(config_object):
-    config_object.PREPARE_BUILD = ["cmake"]#, "-G", "Unix Makefiles"]
-    config_object.BUILD_PROJECT = ["make", "all"]
-#CMAKE = "cmake"
-#MAKE = "devenv"
-#MAKE_PARAMS = "TestProgram.sln /Build Release"
-#MAKE = "make"
-#MAKE_PARAMS = "all"
+
+def loadModule(filename, module_name=None):
+    if not module_name:
+        module_name = 'unnamed_module.' + os.path.basename(os.path.splitext(filename)[0])
+
+    spec = import_util.spec_from_file_location(module_name, filename)
+    module = import_util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def build_project(sourceRoot, buildRoot, prepare_cmd, build_cmd):
     resultError = None
 
     # If it exists, remove old project folder
-    if path.isdir(buildRoot):
+    if os.path.isdir(buildRoot):
         shutil.rmtree(buildRoot)
     os.makedirs(buildRoot)
 
@@ -77,21 +85,23 @@ def build_project(sourceRoot, buildRoot, prepare_cmd, build_cmd):
     os.chdir(currentDir)
     return resultError
 
-def run_project_tests(environment, target):
+
+def run_suite_tests(tester, target, settings):
     results = []
     currentDir = os.getcwd()
     os.chdir(target)
 
     # Run each project's tests.
-    for project in config.projects:
+    for project in settings.projects:
         displayName, identifier, projectType, points = project
         info("\nRunning project " + displayName + "...\n")
 
         # Based on the project type, gather necessary data and execute as appropriate.
-        if projectType == config.ProjectTypes.library:
-            score, penaltyTotals = runLibraryTests(identifier, environment, target)
-        elif projectType == config.ProjectTypes.standalone:
-            score, penaltyTotals = runStandaloneTests(os.path.join(target, identifier))
+        # score, penaltyTotal = run_project_tests(identifier, tester, target, settings) # Add soon
+        if projectType == settings.ProjectTypes.library:
+            score, penaltyTotals = runLibraryTests(initialize_library_tests(identifier, tester, target, settings))
+        elif projectType == settings.ProjectTypes.standalone:
+            score, penaltyTotals = run_project_tests(identifier, tester, target, settings)
         else:
             score, penaltyTotals = (0, None)
 
@@ -105,19 +115,19 @@ def run_project_tests(environment, target):
             info("\nTest Cases:  " + str(score * points) + "\n")
             overallPenalty = 0
 
-            for penaltyNum in range(0, len(config.testCasePenalties)):
-                penaltyName, magnitude = config.testCasePenalties[penaltyNum]
+            for penaltyNum in range(0, len(settings.testCasePenalties)):
+                penaltyName, magnitude = settings.testCasePenalties[penaltyNum]
                 overallPenalty += penaltyTotals[penaltyNum]
                 info(penaltyName + ":\t" + str(penaltyTotals[penaltyNum]) + "\n")
 
-            for penaltyNum in range(0, len(config.projectPenalties)):
-                penaltyName, magnitude = config.projectPenalties[penaltyNum]
-                penaltyIndex = penaltyNum + len(config.testCasePenalties)
+            for penaltyNum in range(0, len(settings.projectPenalties)):
+                penaltyName, magnitude = settings.projectPenalties[penaltyNum]
+                penaltyIndex = penaltyNum + len(settings.testCasePenalties)
                 overallPenalty += penaltyTotals[penaltyIndex]
                 info(penaltyName + ":\t" + str(penaltyTotals[penaltyIndex]) + "\n")
 
             # Apply the penalties and scale to the number of points
-            score = (score + max(-config.maxPenalty, overallPenalty)) * points
+            score = (score + max(-settings.maxPenalty, overallPenalty)) * points
 
         # Add to the results list.
         results.append((displayName, score))
@@ -126,20 +136,90 @@ def run_project_tests(environment, target):
     os.chdir(currentDir)
     return results
 
-def runLibraryTests(name, core, target):
+
+def run_project_tests(name, tester, target, settings):
+    context = settings.initialize(name, tester, target, settings)
+    penaltyTotals = [0] * (len(settings.testCasePenalties) + len(settings.projectPenalties))
+
+    try:
+        numOfTests = settings.getNumberOfTests(context)
+    except Exception as error:
+        info("Error getting number of tests; " + type(error).__name__ + ": " + str(error) + "\n")
+        numOfTests = 0
+
+    if numOfTests == 0:
+        return None, None
+
+    info("Number of tests: " + str(numOfTests) + ".\n")
+
+    score = 0
+    for testNum in range(0, numOfTests):
+        info("Test case " + str(testNum) + "... ")
+
+        try:
+            caseScore = settings.runCaseTest(testNum, context)
+        except Exception as error:
+            info(type(error).__name__ + ": " + str(error) + ". Score: 0\n")
+            caseScore = 0
+            continue
+
+        score += caseScore
+        info("Score: " + str(caseScore))
+
+        for penaltyNum in range(0, len(settings.testCasePenalties)):
+            penaltyName, magnitude = settings.testCasePenalties[penaltyNum]
+
+            try:
+                penalty = settings.runCasePenalty(penaltyNum, testNum, context)
+            except Exception as error:
+                info(type(error).__name__ + ": " + str(error) + "\n")
+                penalty = 1 # fix? Ok?
+
+            penaltyTotals[penaltyNum] += penalty * magnitude * caseScore
+            info(";\t" + penaltyName + ": " + str(penalty))
+
+        if caseScore < 1:
+            try:
+                info(";\t" + settings.getTestDescription(testNum, context))
+            except Exception as error:
+                info("ERROR GETTING DESCRIPTION - " + type(error).__name__ + ": " + str(error) + "\n")
+        info(".\n")
+
+    for penaltyNum in range(0, len(settings.projectPenalties)):
+        penaltyName, magnitude = settings.projectPenalties[penaltyNum]
+
+        try:
+            penalty = ((settings.runProjectPenalty(penaltyNum, context) - 1) * score) * magnitude / numOfTests # Fix penalties?
+        except Exception as error:
+            info(type(error).__name__ + ": " + str(error))
+            penalty = score * magnitude / numOfTests
+
+        penaltyTotals[penaltyNum + len(settings.testCasePenalties)] = penalty
+
+    return score / numOfTests, penaltyTotals
+
+
+# TODO - Redo library variants
+def initialize_library_tests(name, core, target, settings):
     # Grab the libraries needed to process these tests.
-    coreFile = util.find_library(path.join(core, name)) or util.find_library(path.join(core, "lib" + name))
+    coreFile = c_util.find_library(os.path.join(core, name)) or c_util.find_library(os.path.join(core, "lib" + name))
     if not coreFile:
-        coreFile = path.join(core, "lib" + name + ".so")
+        coreFile = os.path.join(core, "lib" + name + ".so")
 
     coreLib = ctypes.CDLL(coreFile)
     targetLib = loadTempLibrary(target, name)
 
-    config.initializeLibrary(name, coreLib)
-    config.initializeLibrary(name, targetLib)
+    settings.initializeLibrary(name, coreLib)
+    settings.initializeLibrary(name, targetLib)
 
-    penaltyTotals = [0] * (len(config.testCasePenalties) + len(config.projectPenalties))
-    numOfTests = config.getNumberOfTests(name)
+    return (coreLib, targetLib, name, settings)
+
+
+def runLibraryTests(context):
+    coreLib, targetLib, name, settings = context
+
+    penaltyTotals = [0] * (len(settings.testCasePenalties) + len(settings.projectPenalties))
+    numOfTests = settings.getNumberOfTests(name)
     score = 0
 
     if numOfTests == 0:
@@ -148,135 +228,95 @@ def runLibraryTests(name, core, target):
     info("Number of tests: " + str(numOfTests) + ".\n")
     for testNum in range(0, numOfTests):
         info("Test case " + str(testNum) + "... ")
-        caseScore = config.runCaseTest(name, testNum, coreLib, targetLib)
+        caseScore = settings.runCaseTest(name, testNum, coreLib, targetLib)
         score += caseScore
         info("Score: " + str(caseScore))
 
-        for penaltyNum in range(0, len(config.testCasePenalties)):
-            penaltyName, magnitude = config.testCasePenalties[penaltyNum]
-            penalty = config.runCasePenalty(name, testNum, penaltyName, coreLib, targetLib)
+        for penaltyNum in range(0, len(settings.testCasePenalties)):
+            penaltyName, magnitude = settings.testCasePenalties[penaltyNum]
+            penalty = settings.runCasePenalty(name, testNum, penaltyName, coreLib, targetLib)
             penaltyTotals[penaltyNum] += penalty * magnitude * caseScore
             info(";\t" + penaltyName + ": " + str(penalty))
         info(".\n")
 
         if caseScore < 1:
-            info(config.getTestDescription(name, testNum))
+            info(settings.getTestDescription(name, testNum))
 
-    for penaltyNum in range(0, len(config.projectPenalties)):
-        penaltyName, magnitude = config.projectPenalties[penaltyNum]
-        penalty = config.runProjectPenalty(name, penaltyName, coreLib, targetLib) * magnitude / numOfTests
-        penaltyTotals[penaltyNum + len(config.testCasePenalties)] = penalty
-
-    return score / numOfTests, penaltyTotals
-
-def runStandaloneTests(command):
-    penaltyTotals = [0] * (len(config.testCasePenalties) + len(config.projectPenalties))
-    numOfTests = 0
-    score = 0
-
-    try:
-        numOfTests = int(subprocess.check_output([ command, "-n" ]))
-    except subprocess.CalledProcessError as error:
-        print("Error getting number of tests: " + error.output)
-    except Exception as error:
-        print("Error calling command " + command + " -n")
-        raise error
-
-    if numOfTests == 0:
-        return None, None
-
-    info("Number of tests: " + str(numOfTests) + ".\n")
-    for testNum in range(0, numOfTests):
-        info("Test " + str(testNum) + "... ")
-        try:
-            output = subprocess.check_output([ command, "-c" + str(testNum) ])
-            caseScore = float(subprocess.check_output([ command, "-c" + str(testNum) ]))
-        except Exception as error:
-            info(type(error).__name__ + ": " + str(error))
-            caseScore = 0
-            
-        score += caseScore
-        info("Score: " + str(caseScore))
-
-        for penaltyNum in range(0, len(config.testCasePenalties)):
-            penaltyName, magnitude = config.testCasePenalties[penaltyNum]
-            try:
-                penalty = float(subprocess.check_output([ command, "--" + penaltyName + " " + str(testNum) ])) - 1
-            except Exception as error:
-                info(type(error).__name__ + ": " + str(error))
-                penalty = 1
-
-            penaltyTotals[penaltyNum] += penalty * magnitude * caseScore
-            info(";\t" + penaltyName + ": " + str(penalty))
-        info(".\n")
-
-        if caseScore < 1:
-            try:
-                info(subprocess.check_output([ command, "-d" + str(testNum) ]))
-            except Exception as error:
-                info("ERROR GETTING DESCRIPTION - " + type(error).__name__ + ": " + str(error))
-
-    for penaltyNum in range(0, len(config.projectPenalties)):
-        penaltyName, magnitude = config.projectPenalties[penaltyNum]
-        try:
-            penalty = ((float(subprocess.check_output([ command, "--" + penaltyName ])) - 1) * score) * magnitude / numOfTests
-        except Exception as error:
-            info(type(error).__name__ + ": " + str(error))
-            penalty = score * magnitude / numOfTests
-
-        penaltyTotals[penaltyNum + len(config.testCasePenalties)] = penalty
+    for penaltyNum in range(0, len(settings.projectPenalties)):
+        penaltyName, magnitude = settings.projectPenalties[penaltyNum]
+        penalty = settings.runProjectPenalty(name, penaltyName, coreLib, targetLib) * magnitude / numOfTests
+        penaltyTotals[penaltyNum + len(settings.testCasePenalties)] = penalty
 
     return score / numOfTests, penaltyTotals
+
+
+def makeBuildPathsAbsolute(settings):
+    settings.destination = os.path.abspath(settings.destination)
+    settings.base = os.path.abspath(settings.base)
+    settings.targetSource = os.path.abspath(settings.targetSource)
+    settings.targetBuild = os.path.abspath(settings.targetBuild)
+    settings.testerSource = os.path.abspath(settings.testerSource)
+    settings.testerBuild = os.path.abspath(settings.testerBuild)
+
 
 def main():
-    import glob
-    import distutils.dir_util
+    parseArguments()
 
-    parseArguments(config)
-    determineEnvironment(config)
+    # Save the current folder and move to the test suite location.
+    startingDir = os.getcwd()
+    os.chdir(cfg.runtime.test_path)
+
+    # Load the settings for this project.
+    settings_info = loadModule("settings.py")
+    cfg.projects = loadModule(settings_info.project_settings_file)
+    cfg.build = loadModule(settings_info.build_settings_file)
+    makeBuildPathsAbsolute(cfg.build)
 
     # Build the environment components (only need to do this once.)
     info("Building test environment... ")
-    build_project(config.testerSource, config.testerBuild, config.PREPARE_BUILD, config.BUILD_PROJECT)
+    build_project(cfg.build.testerSource, cfg.build.testerBuild, cfg.runtime.prep_cmd, cfg.runtime.build_cmd)
     info("done.\n")
 
     # For each student submission, copy the base files, then the submission, into the "Student" folder.
-    for submission in glob.glob(path.join(config.submissionPath, "*")):
-        if not path.isdir(submission):
+    for submission in glob.glob(os.path.join(cfg.runtime.target_path, "*")):
+        if not os.path.isdir(submission):
             continue
 
         # Create a new target folder with base files in it
-        if path.isdir(config.studentSource):
-            shutil.rmtree(config.studentSource)
-        os.makedirs(config.studentSource)
-        distutils.dir_util.copy_tree(config.baseSource, config.studentSource)
+        if os.path.isdir(cfg.build.destination):
+            shutil.rmtree(cfg.build.destination)
+        os.makedirs(cfg.build.destination)
+        dir_util.copy_tree(cfg.build.base, cfg.build.destination)
 
         # Special kludge for common mistake (placing files in a "Project" directory)
-        if path.isdir(path.join(submission, "Project")):
-            distutils.dir_util.copy_tree(path.join(submission, "Project"), config.studentSource)
-        else:
-            distutils.dir_util.copy_tree(submission, config.studentSource)
+#        if os.path.isdir(os.path.join(submission, "Project")):
+#            dir_util.copy_tree(os.path.join(submission, "Project"), cfg.build.destination)
+#        else:
+        dir_util.copy_tree(submission, cfg.build.destination)
 
         # Build the project.
         info("Building project for " + submission + "... ")
-        resultError = build_project(config.targetSource, config.targetBuild, config.PREPARE_BUILD, config.BUILD_PROJECT)
+        resultError = build_project(cfg.build.targetSource, cfg.build.targetBuild, cfg.runtime.prep_cmd, cfg.runtime.build_cmd)
         info("done.\n")
 
         if resultError != None:
-            print "Project failed to build."
+            print("Project failed to build.")
 #            print "Process error with " + str(error.cmd) + ": Returned " + str(error.returncode) + ", Output: " + error.output
-            projectResults = []
+            suiteResults = []
         else:
-            projectResults = run_project_tests(config.testerBuild, config.targetBuild)
+            suiteResults = run_suite_tests(cfg.build.testerBuild, cfg.build.targetBuild, cfg.projects)
 
         # Track the scores.
         grandTotal = 0.0
 
-        print "\nScores for " + submission + ":"
-        for name, result in projectResults:
-            print name + ": " + str(result)
+        print("\nScores for " + submission + ":")
+        for name, result in suiteResults:
+            print(name + ": " + str(result))
             grandTotal += result
-        print "Overall score: " + str(grandTotal) + "\n"
+        print("Overall score: " + str(grandTotal) + "\n")
+
+    # Return to where we started at.
+    os.chdir(startingDir)
 
 if __name__ == "__main__":
     main()

@@ -16,6 +16,7 @@ import ctypes.util as c_util
 import distutils.dir_util as dir_util
 import importlib.util as import_util
 
+import suite_module
 
 cfg = argparse.Namespace()
 cfg.runtime = argparse.Namespace()
@@ -35,7 +36,7 @@ def parseArguments():
     global config
     parser = argparse.ArgumentParser(description='A program to run a set of tests for a programming assignment.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_help = True
-    parser.add_argument('test_path', nargs='?', default="./", help='path of test suite to load')
+    parser.add_argument('suite_path', nargs='?', default="./", help='path of test suite to load')
     parser.add_argument('target_path', nargs='?', default=None, help='path of the target projects to consider (by subdirectory / folder)')
     parser.add_argument('-V', '--version', action='version', version='%(prog)s 0.1')
     parser.add_argument('-q', '--quiet', dest='quiet', action='store_true', help='execute in quiet mode')
@@ -86,24 +87,16 @@ def build_project(sourceRoot, buildRoot, prepare_cmd, build_cmd):
     return resultError
 
 
-def run_suite_tests(tester, target, settings):
+def run_suite_tests(framework, subject, settings):
     results = []
-    currentDir = os.getcwd()
-    os.chdir(target)
+#    currentDir = os.getcwd() <--- These are needed for standalone only
+#    os.chdir(subject)
 
     # Run each project's tests.
     for project in settings.projects:
-        displayName, identifier, projectType, points = project
+        displayName, identifier, points = project
         info("\nRunning project " + displayName + "...\n")
-
-        # Based on the project type, gather necessary data and execute as appropriate.
-        # score, penaltyTotal = run_project_tests(identifier, tester, target, settings) # Add soon
-        if projectType == settings.ProjectTypes.library:
-            score, penaltyTotals = runLibraryTests(initialize_library_tests(identifier, tester, target, settings))
-        elif projectType == settings.ProjectTypes.standalone:
-            score, penaltyTotals = run_project_tests(identifier, tester, target, settings)
-        else:
-            score, penaltyTotals = (0, None)
+        score, penaltyTotals = run_project_tests(identifier, framework, subject, settings)
 
         # If the project didn't compile, just print out a single line indicating that.
         if not score:
@@ -132,13 +125,12 @@ def run_suite_tests(tester, target, settings):
         # Add to the results list.
         results.append((displayName, score))
 
-    # Change back to the starting directory and return the results.
-    os.chdir(currentDir)
+#    os.chdir(currentDir) <--- standalone / blackbox only
     return results
 
 
-def run_project_tests(name, tester, target, settings):
-    context = settings.initialize(name, tester, target, settings)
+def run_project_tests(name, framework, subject, settings):
+    context = settings.initializeProject(name, framework, subject, settings)
     penaltyTotals = [0] * (len(settings.testCasePenalties) + len(settings.projectPenalties))
 
     try:
@@ -173,7 +165,7 @@ def run_project_tests(name, tester, target, settings):
                 penalty = settings.runCasePenalty(penaltyNum, testNum, context)
             except Exception as error:
                 info(type(error).__name__ + ": " + str(error) + "\n")
-                penalty = 1 # fix? Ok?
+                penalty = 1
 
             penaltyTotals[penaltyNum] += penalty * magnitude * caseScore
             info(";\t" + penaltyName + ": " + str(penalty))
@@ -189,62 +181,11 @@ def run_project_tests(name, tester, target, settings):
         penaltyName, magnitude = settings.projectPenalties[penaltyNum]
 
         try:
-            penalty = ((settings.runProjectPenalty(penaltyNum, context) - 1) * score) * magnitude / numOfTests # Fix penalties?
+            penalty = settings.runProjectPenalty(penaltyNum, context) * score * magnitude
         except Exception as error:
             info(type(error).__name__ + ": " + str(error))
-            penalty = score * magnitude / numOfTests
+            penalty = score * magnitude
 
-        penaltyTotals[penaltyNum + len(settings.testCasePenalties)] = penalty
-
-    return score / numOfTests, penaltyTotals
-
-
-# TODO - Redo library variants
-def initialize_library_tests(name, core, target, settings):
-    # Grab the libraries needed to process these tests.
-    coreFile = c_util.find_library(os.path.join(core, name)) or c_util.find_library(os.path.join(core, "lib" + name))
-    if not coreFile:
-        coreFile = os.path.join(core, "lib" + name + ".so")
-
-    coreLib = ctypes.CDLL(coreFile)
-    targetLib = loadTempLibrary(target, name)
-
-    settings.initializeLibrary(name, coreLib)
-    settings.initializeLibrary(name, targetLib)
-
-    return (coreLib, targetLib, name, settings)
-
-
-def runLibraryTests(context):
-    coreLib, targetLib, name, settings = context
-
-    penaltyTotals = [0] * (len(settings.testCasePenalties) + len(settings.projectPenalties))
-    numOfTests = settings.getNumberOfTests(name)
-    score = 0
-
-    if numOfTests == 0:
-        return None, None
-
-    info("Number of tests: " + str(numOfTests) + ".\n")
-    for testNum in range(0, numOfTests):
-        info("Test case " + str(testNum) + "... ")
-        caseScore = settings.runCaseTest(name, testNum, coreLib, targetLib)
-        score += caseScore
-        info("Score: " + str(caseScore))
-
-        for penaltyNum in range(0, len(settings.testCasePenalties)):
-            penaltyName, magnitude = settings.testCasePenalties[penaltyNum]
-            penalty = settings.runCasePenalty(name, testNum, penaltyName, coreLib, targetLib)
-            penaltyTotals[penaltyNum] += penalty * magnitude * caseScore
-            info(";\t" + penaltyName + ": " + str(penalty))
-        info(".\n")
-
-        if caseScore < 1:
-            info(settings.getTestDescription(name, testNum))
-
-    for penaltyNum in range(0, len(settings.projectPenalties)):
-        penaltyName, magnitude = settings.projectPenalties[penaltyNum]
-        penalty = settings.runProjectPenalty(name, penaltyName, coreLib, targetLib) * magnitude / numOfTests
         penaltyTotals[penaltyNum + len(settings.testCasePenalties)] = penalty
 
     return score / numOfTests, penaltyTotals
@@ -253,10 +194,11 @@ def runLibraryTests(context):
 def makeBuildPathsAbsolute(settings):
     settings.destination = os.path.abspath(settings.destination)
     settings.base = os.path.abspath(settings.base)
-    settings.targetSource = os.path.abspath(settings.targetSource)
-    settings.targetBuild = os.path.abspath(settings.targetBuild)
-    settings.testerSource = os.path.abspath(settings.testerSource)
-    settings.testerBuild = os.path.abspath(settings.testerBuild)
+
+    settings.subject_src = os.path.abspath(settings.subject_src)
+    settings.subject_bin = os.path.abspath(settings.subject_bin)
+    settings.framework_src = os.path.abspath(settings.framework_src)
+    settings.framework_bin = os.path.abspath(settings.framework_bin)
 
 
 def main():
@@ -264,39 +206,38 @@ def main():
 
     # Save the current folder and move to the test suite location.
     startingDir = os.getcwd()
-    os.chdir(cfg.runtime.test_path)
+    os.chdir(cfg.runtime.suite_path)
 
     # Load the settings for this project.
-    settings_info = loadModule("settings.py")
-    cfg.projects = loadModule(settings_info.project_settings_file)
-    cfg.build = loadModule(settings_info.build_settings_file)
+    settings = loadModule("settings.py")
+    cfg.project = settings.project
+    cfg.build = settings.build
+
+    cfg.project.importToolbox(suite_module)
     makeBuildPathsAbsolute(cfg.build)
 
     # Build the environment components (only need to do this once.)
-    info("Building test environment... ")
-    build_project(cfg.build.testerSource, cfg.build.testerBuild, cfg.runtime.prep_cmd, cfg.runtime.build_cmd)
+    info("Preparing framework environment... ")
+    build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.runtime.prep_cmd, cfg.runtime.build_cmd)
+    frameworkContext = cfg.project.initializeFramework(cfg.build.framework_bin)
     info("done.\n")
 
-    # For each student submission, copy the base files, then the submission, into the "Student" folder.
+    # For each submission, copy the base files, then the submission, into the destination folder.
     for submission in glob.glob(os.path.join(cfg.runtime.target_path, "*")):
         if not os.path.isdir(submission):
             continue
 
-        # Create a new target folder with base files in it
+        # Create a new subject folder with base files in it - then copy oer the submission to be tested.
         if os.path.isdir(cfg.build.destination):
             shutil.rmtree(cfg.build.destination)
         os.makedirs(cfg.build.destination)
         dir_util.copy_tree(cfg.build.base, cfg.build.destination)
-
-        # Special kludge for common mistake (placing files in a "Project" directory)
-#        if os.path.isdir(os.path.join(submission, "Project")):
-#            dir_util.copy_tree(os.path.join(submission, "Project"), cfg.build.destination)
-#        else:
         dir_util.copy_tree(submission, cfg.build.destination)
 
         # Build the project.
-        info("Building project for " + submission + "... ")
-        resultError = build_project(cfg.build.targetSource, cfg.build.targetBuild, cfg.runtime.prep_cmd, cfg.runtime.build_cmd)
+        info("Preparing project for " + submission + "... ")
+        resultError = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.runtime.prep_cmd, cfg.runtime.build_cmd)
+        subjectContext = cfg.project.initializeSubject(cfg.build.subject_bin)
         info("done.\n")
 
         if resultError != None:
@@ -304,7 +245,7 @@ def main():
 #            print "Process error with " + str(error.cmd) + ": Returned " + str(error.returncode) + ", Output: " + error.output
             suiteResults = []
         else:
-            suiteResults = run_suite_tests(cfg.build.testerBuild, cfg.build.targetBuild, cfg.projects)
+            suiteResults = run_suite_tests(frameworkContext, subjectContext, cfg.project)
 
         # Track the scores.
         grandTotal = 0.0

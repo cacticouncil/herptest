@@ -6,11 +6,11 @@ import shutil
 from ctypes import util
 from os import path
 
+
 # Hack: To get Python to load a DLL temporarily - so that it can be replaced later - we need to load a different name.
 # To do this, we'll make a copy of the library, load it, then dispense with it when we're done.
 def loadTempLibrary(directory, name):
     libPath = findLibrary(directory, name) or path.join(directory, name, "lib" + name + '.so')
- 
     hexHash = hashlib.md5(open(libPath,'rb').read()).hexdigest()
 
     # Create a temporary file, based on the MD5 hash, that is a copy of the target library, and load it.
@@ -44,10 +44,9 @@ def findLibrary(directory, name):
               util.find_library(path.join(directory, name, "lib" + name + '.so')))
 
     return (result or
-            isFile(path.join(directory, name)) or
-            isFile(path.join(directory, name, name)) or
-            isFile(path.join(directory, "lib" + name)) or
-            isFile(path.join(directory, name, "lib" + name)) or
-            isFile(path.join(directory, "lib" + name + '.so')) or
-            isFile(path.join(directory, name, "lib" + name + '.so')))
-
+        isFile(path.join(directory, name)) or
+        isFile(path.join(directory, name, name)) or
+        isFile(path.join(directory, "lib" + name)) or
+        isFile(path.join(directory, name, "lib" + name)) or
+        isFile(path.join(directory, "lib" + name + '.so')) or
+        isFile(path.join(directory, name, "lib" + name + '.so')))

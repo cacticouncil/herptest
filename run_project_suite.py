@@ -190,7 +190,7 @@ def main():
     if resultError:
         info(type(resultError).__name__ + ": " + str(resultError) + "\n")
         return
-    info("Initializing framework... ")
+    info("initializing framework... ")
     frameworkContext = cfg.project.initializeFramework(cfg.build.framework_bin)
     info("done.\n")
 
@@ -202,23 +202,24 @@ def main():
         # Create a new subject folder with base files in it - then copy oer the submission to be tested.
         if os.path.isdir(cfg.build.destination):
             shutil.rmtree(cfg.build.destination)
+
         os.makedirs(cfg.build.destination)
         dir_util.copy_tree(cfg.build.base, cfg.build.destination)
         dir_util.copy_tree(submission, cfg.build.destination)
 
         # Build the project.
-        info("Preparing project for " + submission + "... ")
+        info("Building project(s) for " + submission + "... ")
         resultError = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.runtime.prep_cmd, cfg.runtime.build_cmd)
         if resultError:
             info(type(resultError).__name__ + ": " + str(resultError) + "\n")
             continue
 
+        info("initializing... ")
         subjectContext = cfg.project.initializeSubject(cfg.build.subject_bin)
         info("done.\n")
 
         if resultError != None:
             print("Project failed to build:", str(error.cmd))
-#            print "Process error with " + str(error.cmd) + ": Returned " + str(error.returncode) + ", Output: " + error.output
             suiteResults = []
         else:
             suiteResults = run_suite_tests(frameworkContext, subjectContext, cfg.project)
@@ -234,6 +235,7 @@ def main():
 
     # Return to where we started at.
     os.chdir(startingDir)
+
 
 if __name__ == "__main__":
     main()

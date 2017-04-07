@@ -1,4 +1,5 @@
 import ctypes
+import _ctypes
 import hashlib
 import tempfile
 import shutil
@@ -10,12 +11,15 @@ from os import path
 # Hack: To get Python to load a DLL temporarily - so that it can be replaced later - we need to load a different name.
 # To do this, we'll make a copy of the library, load it, then dispense with it when we're done.
 def loadTempLibrary(directory, name):
+    #print("Loading", name, "from", directory)
     libPath = findLibrary(directory, name) or path.join(directory, name, "lib" + name + '.so')
     hexHash = hashlib.md5(open(libPath,'rb').read()).hexdigest()
+    #print("Loading", name, "from", directory, ":", libPath)
 
     # Create a temporary file, based on the MD5 hash, that is a copy of the target library, and load it.
     libTemp = path.join(tempfile.mkdtemp(), hexHash + "-" + shutil._basename(libPath))
     shutil.copyfile(libPath, libTemp)
+    #print("Loaded as", libTemp)
     return ctypes.cdll.LoadLibrary(libTemp)
 
 #def unloadTempLibrary(library):
@@ -33,6 +37,13 @@ def isFile(filename):
 def loadLibrary(directory, name):
     libPath = findLibrary(directory, name) or path.join(directory, "lib" + name + '.so')
     return ctypes.CDLL(libPath, mode=ctypes.RTLD_GLOBAL)
+
+
+def unloadLibrary(library):
+    if "FreeLibrary" in dir(_ctypes):
+        _ctypes.FreeLibrary(library)
+    else:
+        _ctypes.dlclose(library._handle)
 
 
 def findLibrary(directory, name):

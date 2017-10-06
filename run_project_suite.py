@@ -41,7 +41,7 @@ def parseArguments():
     cfg.runtime = parser.parse_args(sys.argv[1:], cfg.runtime)
 
     if not cfg.runtime.target_path:
-        cfg.runtime.target_path = os.path.join(cfg.runtime.test_path, "Projects")
+        cfg.runtime.target_path = os.path.join(cfg.runtime.suite_path, "Projects")
 
     # debug program
     if cfg.runtime.debug:
@@ -139,6 +139,7 @@ def run_project_tests(name, framework, subject, settings):
         info("Score: " + str(caseScore))
 
         if caseScore == 0:
+            info(".\n")
             continue
 
         for penaltyNum in range(0, len(settings.testCasePenalties)):
@@ -160,13 +161,13 @@ def run_project_tests(name, framework, subject, settings):
 
 
 def makeBuildPathsAbsolute(settings):
-    settings.destination = os.path.abspath(settings.destination)
-    settings.base = os.path.abspath(settings.base)
+    settings.destination = os.path.abspath(settings.destination) if settings.destination else None
+    settings.base = os.path.abspath(settings.base) if settings.base else None
 
-    settings.subject_src = os.path.abspath(settings.subject_src)
-    settings.subject_bin = os.path.abspath(settings.subject_bin)
-    settings.framework_src = os.path.abspath(settings.framework_src)
-    settings.framework_bin = os.path.abspath(settings.framework_bin)
+    settings.subject_src = os.path.abspath(settings.subject_src) if settings.subject_src else None
+    settings.subject_bin = os.path.abspath(settings.subject_bin) if settings.subject_bin else None
+    settings.framework_src = os.path.abspath(settings.framework_src) if settings.framework_src else None
+    settings.framework_bin = os.path.abspath(settings.framework_bin) if settings.framework_bin else None
 
 
 def main():
@@ -185,14 +186,17 @@ def main():
     makeBuildPathsAbsolute(cfg.build)
 
     # Build the environment components (only need to do this once.)
-    info("Building framework environment... ")
-    resultError = build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.runtime.prep_cmd, cfg.runtime.build_cmd)
-    if resultError:
-        info(type(resultError).__name__ + ": " + str(resultError) + "\n")
-        return
-    info("initializing framework... ")
-    frameworkContext = cfg.project.initializeFramework(cfg.build.framework_bin)
-    info("done.\n")
+    if cfg.build.framework_src and cfg.build.framework_bin:
+        info("Building framework environment... ")
+        resultError = build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.runtime.prep_cmd, cfg.runtime.build_cmd)
+        if resultError:
+            info(type(resultError).__name__ + ": " + str(resultError) + "\n")
+            return
+        info("initializing framework... ")
+        frameworkContext = cfg.project.initializeFramework(cfg.build.framework_bin)
+        info("done.\n")
+    else:
+        frameworkContext = None
 
     # For each submission, copy the base files, then the submission, into the destination folder.
     for submission in glob.glob(os.path.join(cfg.runtime.target_path, "*")):

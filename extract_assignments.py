@@ -24,7 +24,8 @@ def main():
         student, _, _, filename = os.path.basename(submission).split("_", 3)
         header, ext = os.path.splitext(filename)
         student_path = os.path.join(args.destination, student)
-        os.mkdir(student_path)
+        if not os.path.isdir(student_path):
+            os.mkdir(student_path)
 
         if ext.lower() == ".zip":
             with zipfile.ZipFile(submission) as zf:

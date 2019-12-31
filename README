@@ -1,0 +1,5 @@
+To build package:
+python3 setup.py sdist
+
+To upload:
+python3 -m twine upload dist/*

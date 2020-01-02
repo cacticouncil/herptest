@@ -1,10 +1,10 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
-    name='instructor_testsuite',
+    name='herptest',
     version='0.9.0',
-    packages=['instructor_testsuite',],
-    url='https://github.com/cacticouncil/testingsuite',
+    packages=['herptest',],
+    url='https://github.com/cacticouncil/herptest',
     license='GPL 3',
     author='Jeremiah Blanchard',
     author_email='jjb@eng.ufl.edu',

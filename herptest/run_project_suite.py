@@ -12,7 +12,7 @@ import subprocess
 from distutils import dir_util
 import importlib.util as import_util
 
-import suite_module as toolbox
+from . import suite_module as toolbox
 
 cfg = argparse.Namespace()
 cfg.runtime = argparse.Namespace()

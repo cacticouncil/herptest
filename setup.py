@@ -9,5 +9,13 @@ setup(
     author='Jeremiah Blanchard',
     author_email='jjb@eng.ufl.edu',
     description='Test suite tools for instructors',
-    install_requires=['zipfile','tempfile', 'glob', 'os', 'shutil', 'argparse', 'sys', 'ctypes']
+    install_requires=[ ],
+
+    entry_points =
+    { 'console_scripts':
+        [
+            'elma = herptest.extract_lms_archive:main',
+            'herp = herptest.run_test_suite:main'
+        ]
+    }
 )

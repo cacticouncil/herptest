@@ -22,11 +22,6 @@ def loadTempLibrary(directory, name):
     #print("Loaded as", libTemp)
     return ctypes.cdll.LoadLibrary(libTemp)
 
-#def unloadTempLibrary(library):
-#    ctypes.cdll.FreeLibrary(library._handle)
-#    ctypes.cdll.FreeLibrary(library)
-#    del library
-
 def isFile(filename):
     if path.isfile(filename):
         return filename

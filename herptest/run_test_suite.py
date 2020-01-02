@@ -12,8 +12,6 @@ import subprocess
 from distutils import dir_util
 import importlib.util as import_util
 
-from . import suite_module as toolbox
-
 cfg = argparse.Namespace()
 cfg.runtime = argparse.Namespace()
 
@@ -34,14 +32,11 @@ def parseArguments():
     parser = argparse.ArgumentParser(description='A program to run a set of tests for a programming assignment.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_help = True
     parser.add_argument('suite_path', nargs='?', default="./", help='path of test suite to load')
-    parser.add_argument('target_path', nargs='?', default=None, help='path of the target projects to consider (by subdirectory / folder)')
+    parser.add_argument('target_path', nargs='?', default="Projects", help='path of the target projects to consider (by subdirectory / folder)')
     parser.add_argument('-V', '--version', action='version', version='%(prog)s 0.1')
     parser.add_argument('-q', '--quiet', dest='quiet', action='store_true', help='execute in quiet mode')
     parser.add_argument('-d', '--debug', dest='debug', action='store_true', help='display debug information')
     cfg.runtime = parser.parse_args(sys.argv[1:], cfg.runtime)
-
-    if not cfg.runtime.target_path:
-        cfg.runtime.target_path = os.path.join(cfg.runtime.suite_path, "Projects")
 
     # debug program
     if cfg.runtime.debug:
@@ -72,10 +67,10 @@ def build_project(sourceRoot, buildRoot, prepare_cmd, build_cmd):
     currentDir = os.getcwd()
     os.chdir(buildRoot)
 
-    try:        
+    try:
         subprocess.check_output(prepare_cmd + [sourceRoot], stderr=subprocess.STDOUT)
         subprocess.check_output(build_cmd, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as error:
+    except (subprocess.CalledProcessError, FileNotFoundError) as error:
         resultError = error
 
     os.chdir(currentDir)
@@ -182,7 +177,6 @@ def main():
     cfg.project = settings.project
     cfg.build = settings.build
 
-    cfg.project.importToolbox(toolbox)
     makeBuildPathsAbsolute(cfg.build)
 
     # Build the environment components (only need to do this once.)

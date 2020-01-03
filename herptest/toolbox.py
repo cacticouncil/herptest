@@ -3,9 +3,27 @@ import _ctypes
 import hashlib
 import tempfile
 import shutil
+import os
 
+import importlib.util as import_util
 from ctypes import util
 from os import path
+
+
+def loadModule(filename, module_name=None):
+    if not module_name:
+        module_name = 'unnamed_module.' + path.basename(path.splitext(filename)[0])
+
+    spec = import_util.spec_from_file_location(module_name, filename)
+    module = import_util.module_from_spec(spec)
+
+    try:
+        spec.loader.exec_module(module)
+    except FileNotFoundError as e:
+        print(type(e).__name__ + ": " + str(e))
+        return None
+
+    return module
 
 
 # Hack: To get Python to load a DLL temporarily - so that it can be replaced later - we need to load a different name.

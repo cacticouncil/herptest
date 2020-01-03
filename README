@@ -25,6 +25,9 @@ Unloads the library passed as a parameter
 findLibrary(directory, name)
 Attempts to find any valid version of the library, name-wise (lib, so, etc)
 
+loadModule(filename)
+Loads a Python module from the supplied filename and returns it.
+
 
 Extracting LMS Archives (elma)
 ------------------------------

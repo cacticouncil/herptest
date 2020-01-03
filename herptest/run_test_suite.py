@@ -8,9 +8,9 @@ import os
 import shutil
 import sys
 import subprocess
+from . import toolbox
 
 from distutils import dir_util
-import importlib.util as import_util
 
 cfg = argparse.Namespace()
 cfg.runtime = argparse.Namespace()
@@ -43,16 +43,6 @@ def parseArguments():
         print("SYSTEM ", sys.version)
 
     return
-
-
-def loadModule(filename, module_name=None):
-    if not module_name:
-        module_name = 'unnamed_module.' + os.path.basename(os.path.splitext(filename)[0])
-
-    spec = import_util.spec_from_file_location(module_name, filename)
-    module = import_util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
 
 
 def build_project(sourceRoot, buildRoot, prepare_cmd, build_cmd):
@@ -173,7 +163,10 @@ def main():
     os.chdir(cfg.runtime.suite_path)
 
     # Load the settings for this project.
-    settings = loadModule("settings.py")
+    settings = toolbox.loadModule("settings.py")
+    if not settings:
+        return
+
     cfg.project = settings.project
     cfg.build = settings.build
 

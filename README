@@ -62,13 +62,13 @@ an per-subject (student) basis. The herp utility provides a mechanism to initial
 subject, and project level (where there is one framework used to test many subjects, and each subject has one or more
 projects that are tested individually.)
 
-The test suite is identified by a "settings.py" file that is loaded as a module. The settings file must provide the
+The test suite is identified by a "config.py" file that is loaded as a module. The config file must provide the
 following interface to the testing system:
 
---"project" submodule (settings.project)
---"build" submodule (settings.build)
+--"project" submodule object (config.project)
+--"build" namespace object (config.build)
 
-These submodules are further described below.
+These objects are further described below.
 
 ==project submodule==
 The project submodule should provide the following interface to the testing system:
@@ -121,7 +121,7 @@ shutdownSubject(subject_context)
 This function will be called when all testing is done for this subject. The subject_context passed in is identical to
 that returned by the initializeSubject function.
 
-initializeProject(identifier, framework_context, subject_context, settings.project)
+initializeProject(identifier, framework_context, subject_context, config.project)
 This function is called by the test suite to prepare a project to be tested. It includes the project's internal string
 identifier as well as the framwork / subject contexts (returned by the initializers) and the project settings. Is
 should return any project_context that is important to properly shutdown / cleanup the project after testing is done.
@@ -145,6 +145,39 @@ Runs the test identified by test_number and project_context, capturing the penal
 
 runProjectPenalty(penalty_number, project_context)
 Runs the penalty test identified by penalty_number and project_context, returning its value.
+
+==build namespace==
+The build namespace objects holds paths and build commands. It must provide the following interface:
+
+base (stirng)
+Path to the base project source files; these will be copied into the target before the subject (student)
+submission files are copied.
+
+destination (string)
+Path where student files should be copied. Usually inside the subject_src directory (see subject_src).
+
+resources (string)
+Path to resources used by the project (if any; may be **None**)
+
+subject_src (string)
+Path to source files for the target / subject project to be built. Usually contains the destination directory.
+
+subject_bin (string)
+Path in which the subject project will be built
+
+framework_src (string)
+Path to source files for the framework used for testing the projects
+
+framework_bin (string)
+Path in which the framework will be built
+
+prep_cmd (list of strings)
+Command to be used to prepare the build (e.g., autoconf or cmake). This is a list of strings consisting of the command
+followed by its arguments.
+
+compile_cmd (list of strings)
+Command to be used to compile the build (e.g., make or devenv). This is a list of strings consisting of the command
+followed by its arguments.
 
 
 Building this Package

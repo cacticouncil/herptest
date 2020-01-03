@@ -15,9 +15,15 @@ from distutils import dir_util
 cfg = argparse.Namespace()
 cfg.runtime = argparse.Namespace()
 
-cfg.runtime.prep_cmd = ["cmake"]#, "-G", "Unix Makefiles"
-cfg.runtime.build_cmd = ["make", "all"]
-#cfg.build_cmd = ["devenv", "TestProgram.sln", "/Build Release"]
+
+# Fill default values
+def fill_defaults():
+    global cfg
+
+    if not cfg.build.prep_cmd:
+        cfg.build.prep_cmd = [ "cmake" ]
+    if not cfg.build.compile_cmd:
+        cfg.build.compile_cmd = [ "make", "all" ]
 
 
 def info(message):
@@ -28,7 +34,7 @@ def info(message):
 
 # handle command line args
 def parseArguments():
-    global config
+    global cfg
     parser = argparse.ArgumentParser(description='A program to run a set of tests for a programming assignment.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_help = True
     parser.add_argument('suite_path', nargs='?', default="./", help='path of test suite to load')
@@ -45,7 +51,7 @@ def parseArguments():
     return
 
 
-def build_project(sourceRoot, buildRoot, prepare_cmd, build_cmd):
+def build_project(sourceRoot, buildRoot, prepare_cmd, compile_cmd):
     resultError = None
 
     # If it exists, remove old project folder
@@ -59,7 +65,7 @@ def build_project(sourceRoot, buildRoot, prepare_cmd, build_cmd):
 
     try:
         subprocess.check_output(prepare_cmd + [sourceRoot], stderr=subprocess.STDOUT)
-        subprocess.check_output(build_cmd, stderr=subprocess.STDOUT)
+        subprocess.check_output(compile_cmd, stderr=subprocess.STDOUT)
     except (subprocess.CalledProcessError, FileNotFoundError) as error:
         resultError = error
 
@@ -67,14 +73,14 @@ def build_project(sourceRoot, buildRoot, prepare_cmd, build_cmd):
     return resultError
 
 
-def run_suite_tests(framework, subject, settings):
+def run_suite_tests(framework, subject, proj_settings):
     results = []
 
     # Run each project's tests.
-    for project in settings.projects:
+    for project in proj_settings.projects:
         displayName, identifier, points = project
         info("\nRunning project " + displayName + "...\n")
-        score, penaltyTotals = run_project_tests(identifier, framework, subject, settings)
+        score, penaltyTotals = run_project_tests(identifier, framework, subject, proj_settings)
 
         # If the project didn't compile, just print out a single line indicating that.
         if not score:
@@ -86,19 +92,19 @@ def run_suite_tests(framework, subject, settings):
             info("\nTest Cases:  " + str(score * points) + "\n")
             overallPenalty = 0
 
-            for penaltyNum in range(0, len(settings.testCasePenalties)):
-                penaltyName, magnitude = settings.testCasePenalties[penaltyNum]
+            for penaltyNum in range(0, len(proj_settings.testCasePenalties)):
+                penaltyName, magnitude = proj_settings.testCasePenalties[penaltyNum]
                 overallPenalty += penaltyTotals[penaltyNum]
                 info(penaltyName + ":\t" + str(penaltyTotals[penaltyNum]) + "\n")
 
-            for penaltyNum in range(0, len(settings.projectPenalties)):
-                penaltyName, magnitude = settings.projectPenalties[penaltyNum]
-                penaltyIndex = penaltyNum + len(settings.testCasePenalties)
+            for penaltyNum in range(0, len(proj_settings.projectPenalties)):
+                penaltyName, magnitude = proj_settings.projectPenalties[penaltyNum]
+                penaltyIndex = penaltyNum + len(proj_settings.testCasePenalties)
                 overallPenalty += penaltyTotals[penaltyIndex]
                 info(penaltyName + ":\t" + str(penaltyTotals[penaltyIndex]) + "\n")
 
             # Apply the penalties and scale to the number of points
-            score = (score - min(settings.maxPenalty, overallPenalty)) * points
+            score = (score - min(proj_settings.maxPenalty, overallPenalty)) * points
 
         # Add to the results list.
         results.append((displayName, score))
@@ -106,10 +112,10 @@ def run_suite_tests(framework, subject, settings):
     return results
 
 
-def run_project_tests(name, framework, subject, settings):
-    context = settings.initializeProject(name, framework, subject, settings)
-    penaltyTotals = [0] * (len(settings.testCasePenalties) + len(settings.projectPenalties))
-    numOfTests = settings.getNumberOfTests(context)
+def run_project_tests(name, framework, subject, proj_settings):
+    context = proj_settings.initializeProject(name, framework, subject, proj_settings)
+    penaltyTotals = [0] * (len(proj_settings.testCasePenalties) + len(proj_settings.projectPenalties))
+    numOfTests = proj_settings.getNumberOfTests(context)
 
     if numOfTests == 0:
         return None, None
@@ -119,7 +125,7 @@ def run_project_tests(name, framework, subject, settings):
     score = 0
     for testNum in range(0, numOfTests):
         info("Test case " + str(testNum) + "... ")
-        caseScore = settings.runCaseTest(testNum, context)
+        caseScore = proj_settings.runCaseTest(testNum, context)
         score += caseScore
         info("Score: " + str(caseScore))
 
@@ -127,27 +133,28 @@ def run_project_tests(name, framework, subject, settings):
             info(".\n")
             continue
 
-        for penaltyNum in range(0, len(settings.testCasePenalties)):
-            penaltyName, magnitude = settings.testCasePenalties[penaltyNum]
-            penalty = settings.runCasePenalty(penaltyNum, testNum, context)
+        for penaltyNum in range(0, len(proj_settings.testCasePenalties)):
+            penaltyName, magnitude = proj_settings.testCasePenalties[penaltyNum]
+            penalty = proj_settings.runCasePenalty(penaltyNum, testNum, context)
             penaltyTotals[penaltyNum] += penalty * magnitude * caseScore
             info(";\t" + penaltyName + ": " + str(penalty))
 
         if caseScore < 1:
-            info(";\t" + settings.getTestDescription(testNum, context))
+            info(";\t" + proj_settings.getTestDescription(testNum, context))
         info(".\n")
 
-    for penaltyNum in range(0, len(settings.projectPenalties)):
-        penaltyName, magnitude = settings.projectPenalties[penaltyNum]
-        penalty = settings.runProjectPenalty(penaltyNum, context) * score * magnitude
-        penaltyTotals[penaltyNum + len(settings.testCasePenalties)] = penalty
+    for penaltyNum in range(0, len(proj_settings.projectPenalties)):
+        penaltyName, magnitude = proj_settings.projectPenalties[penaltyNum]
+        penalty = proj_settings.runProjectPenalty(penaltyNum, context) * score * magnitude
+        penaltyTotals[penaltyNum + len(proj_settings.testCasePenalties)] = penalty
 
     return score / numOfTests, penaltyTotals
 
 
 def makeBuildPathsAbsolute(settings):
-    settings.destination = os.path.abspath(settings.destination) if settings.destination else None
     settings.base = os.path.abspath(settings.base) if settings.base else None
+    settings.destination = os.path.abspath(settings.destination) if settings.destination else None
+    settings.resources = os.path.abspath(settings.resources) if settings.resources else None
 
     settings.subject_src = os.path.abspath(settings.subject_src) if settings.subject_src else None
     settings.subject_bin = os.path.abspath(settings.subject_bin) if settings.subject_bin else None
@@ -162,20 +169,22 @@ def main():
     startingDir = os.getcwd()
     os.chdir(cfg.runtime.suite_path)
 
-    # Load the settings for this project.
-    settings = toolbox.loadModule("settings.py")
-    if not settings:
+    # Load the config for this project.
+    config = toolbox.loadModule("config.py")
+
+    if not config:
         return
 
-    cfg.project = settings.project
-    cfg.build = settings.build
+    cfg.project = config.project
+    cfg.build = config.build
+    fill_defaults()
 
     makeBuildPathsAbsolute(cfg.build)
 
     # Build the environment components (only need to do this once.)
     if cfg.build.framework_src and cfg.build.framework_bin:
         info("Building framework environment... ")
-        resultError = build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.runtime.prep_cmd, cfg.runtime.build_cmd)
+        resultError = build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.build.prep_cmd, cfg.build.compile_cmd)
         if resultError:
             info(type(resultError).__name__ + ": " + str(resultError) + "\n")
             return
@@ -200,7 +209,7 @@ def main():
 
         # Build the project.
         info("Building project(s) for " + submission + "... ")
-        resultError = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.runtime.prep_cmd, cfg.runtime.build_cmd)
+        resultError = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.build.prep_cmd, cfg.build.compile_cmd)
         if resultError:
             info(type(resultError).__name__ + ": " + str(resultError) + "\n")
             continue

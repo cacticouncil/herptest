@@ -8,7 +8,9 @@ import os
 import shutil
 import sys
 import subprocess
+import time
 from . import toolbox
+from concurrent import futures
 
 from distutils import dir_util
 
@@ -129,6 +131,9 @@ def run_project_tests(name, framework, subject, proj_settings):
         score += caseScore
         info("Score: " + str(caseScore))
 
+        if caseScore < 1:
+            info("\t[" + proj_settings.getTestDescription(testNum, context) + "]")
+
         if caseScore == 0:
             info(".\n")
             continue
@@ -139,8 +144,6 @@ def run_project_tests(name, framework, subject, proj_settings):
             penaltyTotals[penaltyNum] += penalty * magnitude * caseScore
             info(";\t" + penaltyName + ": " + str(penalty))
 
-        if caseScore < 1:
-            info(";\t" + proj_settings.getTestDescription(testNum, context))
         info(".\n")
 
     for penaltyNum in range(0, len(proj_settings.projectPenalties)):
@@ -162,7 +165,34 @@ def makeBuildPathsAbsolute(settings):
     settings.framework_bin = os.path.abspath(settings.framework_bin) if settings.framework_bin else None
 
 
+# For each submission, copy the base files, then the submission, into the destination folder.
+def prepare_and_test_submission(frameworkContext, submission):
+    global cfg
+    if not os.path.isdir(submission):
+        return None
+
+    # Create a new subject folder with base files in it - then copy oer the submission to be tested.
+    if os.path.isdir(cfg.build.destination):
+        shutil.rmtree(cfg.build.destination)
+
+    os.makedirs(cfg.build.destination)
+    shutil.copytree(cfg.build.base, cfg.build.destination, dirs_exist_ok=True)
+    shutil.copytree(submission, cfg.build.destination, dirs_exist_ok=True)
+
+    # Build the project.
+    info("Building project(s) for " + submission + "... ")
+    resultError = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.build.prep_cmd, cfg.build.compile_cmd)
+    if resultError:
+        info(type(resultError).__name__ + ": " + str(resultError) + "\n")
+
+    info("initializing... ")
+    subjectContext = cfg.project.initializeSubject(cfg.build.subject_bin)
+    info("done.\n")
+    return run_suite_tests(frameworkContext, subjectContext, cfg.project)
+
+
 def main():
+    global cfg
     parseArguments()
 
     # Save the current folder and move to the test suite location.
@@ -194,44 +224,27 @@ def main():
     else:
         frameworkContext = None
 
-    # For each submission, copy the base files, then the submission, into the destination folder.
+    # Prepare and run each submission.
     for submission in glob.glob(os.path.join(cfg.runtime.target_path, "*")):
-        if not os.path.isdir(submission):
-            continue
-
-        # Create a new subject folder with base files in it - then copy oer the submission to be tested.
-        if os.path.isdir(cfg.build.destination):
-            shutil.rmtree(cfg.build.destination)
-
-        os.makedirs(cfg.build.destination)
-        dir_util.copy_tree(cfg.build.base, cfg.build.destination)
-        dir_util.copy_tree(submission, cfg.build.destination)
-
-        # Build the project.
-        info("Building project(s) for " + submission + "... ")
-        resultError = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.build.prep_cmd, cfg.build.compile_cmd)
-        if resultError:
-            info(type(resultError).__name__ + ": " + str(resultError) + "\n")
-            continue
-
-        info("initializing... ")
-        subjectContext = cfg.project.initializeSubject(cfg.build.subject_bin)
-        info("done.\n")
-
-        if resultError != None:
-            print("Project failed to build:", str(error.cmd))
-            suiteResults = []
-        else:
-            suiteResults = run_suite_tests(frameworkContext, subjectContext, cfg.project)
+        with futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(prepare_and_test_submission, frameworkContext, submission)
+            try:
+                suiteResults = future.result()
+            except Exception as e:
+                sys.stderr.write("Error preparing / running " + submission + " - " + type(e).__name__ + ": " + str(e))
+                continue
 
         # Track the scores.
         grandTotal = 0.0
 
         print("\nScores for " + submission + ":")
-        for name, result in suiteResults:
-            print(name + ": " + str(result))
-            grandTotal += result
+        if suiteResults:
+            for name, result in suiteResults:
+                print(name + ": " + str(result))
+                grandTotal += result
+
         print("Overall score: " + str(grandTotal) + "\n")
+        time.sleep(2)
 
     # Return to where we started at.
     os.chdir(startingDir)

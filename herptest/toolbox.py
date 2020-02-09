@@ -45,7 +45,7 @@ class PipeSet:
 
 
 def data_to_file(data, filename):
-    with open(filename, 'w+') as my_file:
+    with open(filename, 'wb+') as my_file:
         my_file.write(data)
         my_file.close()
 

@@ -9,6 +9,7 @@ import shutil
 import sys
 import subprocess
 import time
+import os.path
 
 from . import toolbox
 from concurrent import futures
@@ -88,12 +89,12 @@ def run_suite_tests(framework, subject, proj_settings):
 
         # If the project didn't compile, just print out a single line indicating that.
         if score == None:
-            stdpipe.println("\nGrade:\t0 (Does not compile)")
+            stdpipe.println("\nGrade:\t0 (Does not compile)\n")
             score = 0
 
         else:
             # Print out info (for debugging purposes) on the score and penalty values for the project.
-            stdpipe.println("\nTest Cases:  " + str(score * points))
+            stdpipe.println("\nTest Cases:  " + str(score * points) + "\n")
             overallPenalty = 0
 
             for penaltyNum in range(0, len(proj_settings.testCasePenalties)):
@@ -200,7 +201,7 @@ def main():
     parse_arguments()
 
     # Save the current folder and move to the test suite location.
-    startingDir = os.getcwd()
+    starting_dir = os.getcwd()
     os.chdir(cfg.runtime.suite_path)
 
     # Load the config for this project.
@@ -211,9 +212,17 @@ def main():
 
     cfg.project = config.project
     cfg.build = config.build
+    cfg.result_path = config.result_path
+    cfg.result_log = config.result_log
+    cfg.err_suffix = config.err_suffix
     fill_defaults()
 
+    # Prepare paths
     make_build_paths_absolute(cfg.build)
+    cfg.result_path = os.path.abspath(cfg.result_path) if cfg.result_path else None
+
+    if not os.path.isdir(cfg.result_path):
+        os.mkdir(cfg.result_path)
 
     # Build the environment components (only need to do this once.)
     if cfg.build.framework_src and cfg.build.framework_bin:
@@ -242,18 +251,25 @@ def main():
         # Track the scores.
         grandTotal = 0.0
 
-        stdpipe.print("\nScores for " + submission + ":")
+        stdpipe.println("Scores for " + submission + ":")
         if suiteResults:
             for name, result in suiteResults:
-                stdpipe.print(name + ": " + str(result))
+                stdpipe.println(name + ": " + str(result))
                 grandTotal += result
 
-        stdpipe.print("Overall score: " + str(grandTotal) + "\n")
+        stdpipe.println("Overall score: " + str(grandTotal))
+        errpipe.println("")
+
+        output_dir = os.path.join(cfg.result_path, os.path.basename(submission))
+        if not os.path.isdir(output_dir):
+            os.mkdir(output_dir)
+
+        toolbox.data_to_file(stdpipe.read(), os.path.join(output_dir, cfg.result_log))
+        toolbox.data_to_file(errpipe.read(), os.path.join(output_dir, cfg.result_log + cfg.err_suffix))
         time.sleep(2)
-        print(stdpipe.read().decode('utf-8'))
 
     # Return to where we started at.
-    os.chdir(startingDir)
+    os.chdir(starting_dir)
 
 
 if __name__ == "__main__":

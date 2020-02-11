@@ -56,26 +56,26 @@ def parse_arguments():
     return
 
 
-def build_project(sourceRoot, buildRoot, prepare_cmd, compile_cmd):
-    resultError = None
+def build_project(source_root, build_root, prepare_cmd, compile_cmd):
+    result_error = None
 
     # If it exists, remove old project folder
-    if os.path.isdir(buildRoot):
-        shutil.rmtree(buildRoot)
-    os.makedirs(buildRoot)
+    if os.path.isdir(build_root):
+        shutil.rmtree(build_root)
+    os.makedirs(build_root)
 
     # Build the project
-    currentDir = os.getcwd()
-    os.chdir(buildRoot)
+    current_dir = os.getcwd()
+    os.chdir(build_root)
 
     try:
-        subprocess.check_output(prepare_cmd + [sourceRoot], stderr=subprocess.STDOUT)
+        subprocess.check_output(prepare_cmd + [source_root], stderr=subprocess.STDOUT)
         subprocess.check_output(compile_cmd, stderr=subprocess.STDOUT)
     except (subprocess.CalledProcessError, FileNotFoundError) as error:
-        resultError = error
+        result_error = error
 
-    os.chdir(currentDir)
-    return resultError
+    os.chdir(current_dir)
+    return result_error
 
 
 def run_suite_tests(framework, subject, proj_settings):
@@ -83,9 +83,9 @@ def run_suite_tests(framework, subject, proj_settings):
 
     # Run each project's tests.
     for project in proj_settings.projects:
-        displayName, identifier, points = project
-        stdpipe.println("Running project " + displayName + "...")
-        score, penaltyTotals = run_project_tests(identifier, framework, subject, proj_settings)
+        display_name, identifier, points = project
+        stdpipe.println("Running project " + display_name + "...")
+        score, penalty_totals = run_project_tests(identifier, framework, subject, proj_settings)
 
         # If the project didn't compile, just print out a single line indicating that.
         if score == None:
@@ -95,66 +95,66 @@ def run_suite_tests(framework, subject, proj_settings):
         else:
             # Print out info (for debugging purposes) on the score and penalty values for the project.
             stdpipe.println("\nTest Cases:  " + str(score * points) + "\n")
-            overallPenalty = 0
+            overall_penalty = 0
 
-            for penaltyNum in range(0, len(proj_settings.testCasePenalties)):
-                penaltyName, magnitude = proj_settings.testCasePenalties[penaltyNum]
-                overallPenalty += penaltyTotals[penaltyNum]
-                stdpipe.println(penaltyName + ":\t" + str(penaltyTotals[penaltyNum]))
+            for penalty_num in range(0, len(proj_settings.test_case_penalties)):
+                penalty_name, magnitude = proj_settings.test_case_penalties[penalty_num]
+                overall_penalty += penalty_totals[penalty_num]
+                stdpipe.println(penalty_name + ":\t" + str(penalty_totals[penalty_num]))
 
-            for penaltyNum in range(0, len(proj_settings.projectPenalties)):
-                penaltyName, magnitude = proj_settings.projectPenalties[penaltyNum]
-                penaltyIndex = penaltyNum + len(proj_settings.testCasePenalties)
-                overallPenalty += penaltyTotals[penaltyIndex]
-                stdpipe.println(penaltyName + ":\t" + str(penaltyTotals[penaltyIndex]))
+            for penalty_num in range(0, len(proj_settings.project_penalties)):
+                penalty_name, magnitude = proj_settings.project_penalties[penalty_num]
+                penalty_index = penalty_num + len(proj_settings.test_case_penalties)
+                overall_penalty += penalty_totals[penalty_index]
+                stdpipe.println(penalty_name + ":\t" + str(penalty_totals[penalty_index]))
 
             # Apply the penalties and scale to the number of points
-            score = (score - min(proj_settings.maxPenalty, overallPenalty)) * points
+            score = (score - min(proj_settings.max_penalty, overall_penalty)) * points
 
         # Add to the results list.
-        results.append((displayName, score))
+        results.append((display_name, score))
 
     return results
 
 
 def run_project_tests(name, framework, subject, proj_settings):
-    context = proj_settings.initializeProject(name, framework, subject, proj_settings)
-    penaltyTotals = [0] * (len(proj_settings.testCasePenalties) + len(proj_settings.projectPenalties))
-    numOfTests = proj_settings.getNumberOfTests(context)
+    context = proj_settings.initialize_project(name, framework, subject, proj_settings)
+    penalty_totals = [0] * (len(proj_settings.test_case_penalties) + len(proj_settings.project_penalties))
+    num_of_tests = proj_settings.get_number_of_tests(context)
 
-    if numOfTests == 0:
+    if num_of_tests == 0:
         return None, None
 
-    stdpipe.println("Number of tests: " + str(numOfTests) + ".")
+    stdpipe.println("Number of tests: " + str(num_of_tests) + ".")
 
     score = 0
-    for testNum in range(0, numOfTests):
-        stdpipe.print("Test case " + str(testNum) + "... ")
-        caseScore = proj_settings.runCaseTest(testNum, context)
-        score += caseScore
-        stdpipe.print("Score: " + str(caseScore))
+    for test_num in range(0, num_of_tests):
+        stdpipe.print("Test case " + str(test_num) + "... ")
+        case_score = proj_settings.run_case_test(test_num, context)
+        score += case_score
+        stdpipe.print("Score: " + str(case_score))
 
-        if caseScore < 1:
-            stdpipe.print("\t[" + proj_settings.getTestDescription(testNum, context) + "]")
+        if case_score < 1:
+            stdpipe.print("\t[" + proj_settings.get_test_description(test_num, context) + "]")
 
-        if caseScore == 0:
+        if case_score == 0:
             stdpipe.println(".")
             continue
 
-        for penaltyNum in range(0, len(proj_settings.testCasePenalties)):
-            penaltyName, magnitude = proj_settings.testCasePenalties[penaltyNum]
-            penalty = proj_settings.runCasePenalty(penaltyNum, testNum, context)
-            penaltyTotals[penaltyNum] += penalty * magnitude * caseScore
-            stdpipe.print(";\t" + penaltyName + ": " + str(penalty))
+        for penalty_num in range(0, len(proj_settings.test_case_penalties)):
+            penalty_name, magnitude = proj_settings.test_case_penalties[penalty_num]
+            penalty = proj_settings.run_case_penalty(penalty_num, test_num, context)
+            penalty_totals[penalty_num] += penalty * magnitude * case_score
+            stdpipe.print(";\t" + penalty_name + ": " + str(penalty))
 
         stdpipe.println(".")
 
-    for penaltyNum in range(0, len(proj_settings.projectPenalties)):
-        penaltyName, magnitude = proj_settings.projectPenalties[penaltyNum]
-        penalty = proj_settings.runProjectPenalty(penaltyNum, context) * score * magnitude
-        penaltyTotals[penaltyNum + len(proj_settings.testCasePenalties)] = penalty
+    for penalty_num in range(0, len(proj_settings.project_penalties)):
+        penalty_name, magnitude = proj_settings.project_penalties[penalty_num]
+        penalty = proj_settings.run_project_penalty(penalty_num, context) * score * magnitude
+        penalty_totals[penalty_num + len(proj_settings.test_case_penalties)] = penalty
 
-    return score / numOfTests, penaltyTotals
+    return score / num_of_tests, penalty_totals
 
 
 def make_build_paths_absolute(settings):
@@ -169,7 +169,7 @@ def make_build_paths_absolute(settings):
 
 
 # For each submission, copy the base files, then the submission, into the destination folder.
-def prepare_and_test_submission(frameworkContext, submission):
+def prepare_and_test_submission(framework_context, submission):
     global cfg
     if not os.path.isdir(submission):
         return None
@@ -191,9 +191,9 @@ def prepare_and_test_submission(frameworkContext, submission):
         errpipe.print(type(resultError).__name__ + ": " + str(resultError) + "\n")
 
     info("Initializing... ")
-    subjectContext = cfg.project.initializeSubject(cfg.build.subject_bin)
+    subject_context = cfg.project.initialize_subject(cfg.build.subject_bin)
     info("done.\n")
-    return run_suite_tests(frameworkContext, subjectContext, cfg.project)
+    return run_suite_tests(framework_context, subject_context, cfg.project)
 
 
 def main():
@@ -227,37 +227,37 @@ def main():
     # Build the environment components (only need to do this once.)
     if cfg.build.framework_src and cfg.build.framework_bin:
         info("Building framework environment... ")
-        resultError = build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.build.prep_cmd, cfg.build.compile_cmd)
-        if resultError:
-            info(type(resultError).__name__ + ": " + str(resultError) + "\n")
+        result_error = build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.build.prep_cmd, cfg.build.compile_cmd)
+        if result_error:
+            info(type(resultError).__name__ + ": " + str(result_error) + "\n")
             return
         info("initializing framework... ")
-        frameworkContext = cfg.project.initializeFramework(cfg.build.framework_bin)
+        framework_context = cfg.project.initialize_framework(cfg.build.framework_bin)
         info("done.\n")
     else:
-        frameworkContext = None
+        framework_context = None
 
     # Prepare and run each submission.
     for submission in glob.glob(os.path.join(cfg.runtime.target_path, "*")):
         with futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(prepare_and_test_submission, frameworkContext, submission)
+            future = executor.submit(prepare_and_test_submission, framework_context, submission)
             try:
-                suiteResults = future.result()
+                suite_results = future.result()
             except Exception as e:
                 errpipe.print("Error preparing / running " + submission + " - " + type(e).__name__ + ": " + str(e))
                 sys.stderr.write(errpipe.read().decode('utf-8'))
                 continue
 
         # Track the scores.
-        grandTotal = 0.0
+        grand_total = 0.0
 
         stdpipe.println("Scores for " + submission + ":")
-        if suiteResults:
-            for name, result in suiteResults:
+        if suite_results:
+            for name, result in suite_results:
                 stdpipe.println(name + ": " + str(result))
-                grandTotal += result
+                grand_total += result
 
-        stdpipe.println("Overall score: " + str(grandTotal))
+        stdpipe.println("Overall score: " + str(grand_total))
         errpipe.println("")
 
         output_dir = os.path.join(cfg.result_path, os.path.basename(submission))

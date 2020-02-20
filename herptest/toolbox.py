@@ -112,12 +112,12 @@ def loadTempLibrary(directory, name):
     return ctypes.cdll.LoadLibrary(libTemp)
 
 
-def loadLibrary(directory, name):
+def load_library(directory, name):
     libPath = find_library(directory, name) or path.join(directory, "lib" + name + '.so')
     return ctypes.CDLL(libPath, mode=ctypes.RTLD_GLOBAL)
 
 
-def unloadLibrary(library):
+def unload_library(library):
     if "FreeLibrary" in dir(_ctypes):
         _ctypes.FreeLibrary(library)
     else:

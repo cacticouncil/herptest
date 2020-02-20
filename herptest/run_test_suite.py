@@ -94,19 +94,19 @@ def run_suite_tests(framework, subject, proj_settings):
 
         else:
             # Print out info (for debugging purposes) on the score and penalty values for the project.
-            stdpipe.println("\nTest Cases:  " + str(score * points) + "\n")
+            stdpipe.println("\nTest Cases:\t" + str(score * points) + " (" + str(score * 100) + "%)\n")
             overall_penalty = 0
 
             for penalty_num in range(0, len(proj_settings.test_case_penalties)):
                 penalty_name, magnitude = proj_settings.test_case_penalties[penalty_num]
                 overall_penalty += penalty_totals[penalty_num]
-                stdpipe.println(penalty_name + ":\t" + str(penalty_totals[penalty_num]))
+                stdpipe.println(penalty_name + " Penalty (overall):\t" + str(penalty_totals[penalty_num] * 100) + "%")
 
             for penalty_num in range(0, len(proj_settings.project_penalties)):
                 penalty_name, magnitude = proj_settings.project_penalties[penalty_num]
                 penalty_index = penalty_num + len(proj_settings.test_case_penalties)
                 overall_penalty += penalty_totals[penalty_index]
-                stdpipe.println(penalty_name + ":\t" + str(penalty_totals[penalty_index]))
+                stdpipe.println(penalty_name + " Penalty (overall):\t" + str(penalty_totals[penalty_index] * 100) + "%")
 
             # Apply the penalties and scale to the number of points
             score = (score - min(proj_settings.max_penalty, overall_penalty)) * points
@@ -132,7 +132,7 @@ def run_project_tests(name, framework, subject, proj_settings):
         stdpipe.print("Test case " + str(test_num) + "... ")
         case_score = proj_settings.run_case_test(test_num, context)
         score += case_score
-        stdpipe.print("Score: " + str(case_score))
+        stdpipe.print("Score: " + str(case_score * 100) + "%")
 
         if case_score < 1:
             stdpipe.print("\t[" + proj_settings.get_test_description(test_num, context) + "]")
@@ -144,8 +144,8 @@ def run_project_tests(name, framework, subject, proj_settings):
         for penalty_num in range(0, len(proj_settings.test_case_penalties)):
             penalty_name, magnitude = proj_settings.test_case_penalties[penalty_num]
             penalty = proj_settings.run_case_penalty(penalty_num, test_num, context)
-            penalty_totals[penalty_num] += penalty * magnitude * case_score
-            stdpipe.print(";\t" + penalty_name + ": " + str(penalty))
+            penalty_totals[penalty_num] += penalty * magnitude * case_score / num_of_tests
+            stdpipe.print(";\t" + penalty_name + " Penalty (of max): " + str(penalty * 100) + "%")
 
         stdpipe.println(".")
 
@@ -185,10 +185,10 @@ def prepare_and_test_submission(framework_context, submission):
     # Build the project.
 
     info("Building project(s) for " + submission + "... ")
-    resultError = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.build.prep_cmd, cfg.build.compile_cmd)
-    if resultError:
+    result_error = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.build.prep_cmd, cfg.build.compile_cmd)
+    if result_error:
         info("error building (see logs). ")
-        errpipe.print(type(resultError).__name__ + ": " + str(resultError) + "\n")
+        errpipe.print(type(result_error).__name__ + ": " + str(result_error) + "\n")
 
     info("Initializing... ")
     subject_context = cfg.project.initialize_subject(cfg.build.subject_bin)
@@ -229,7 +229,7 @@ def main():
         info("Building framework environment... ")
         result_error = build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.build.prep_cmd, cfg.build.compile_cmd)
         if result_error:
-            info(type(resultError).__name__ + ": " + str(result_error) + "\n")
+            info(type(result_error).__name__ + ": " + str(result_error) + "\n")
             return
         info("initializing framework... ")
         framework_context = cfg.project.initialize_framework(cfg.build.framework_bin)
@@ -239,13 +239,18 @@ def main():
 
     # Prepare and run each submission.
     for submission in glob.glob(os.path.join(cfg.runtime.target_path, "*")):
+        output_dir = os.path.join(cfg.result_path, os.path.basename(submission))
+
+        if not os.path.isdir(output_dir):
+            os.mkdir(output_dir)
+
         with futures.ThreadPoolExecutor() as executor:
             future = executor.submit(prepare_and_test_submission, framework_context, submission)
             try:
                 suite_results = future.result()
             except Exception as e:
                 errpipe.print("Error preparing / running " + submission + " - " + type(e).__name__ + ": " + str(e))
-                sys.stderr.write(errpipe.read().decode('utf-8'))
+                toolbox.data_to_file(errpipe.read(), os.path.join(output_dir, cfg.result_log + cfg.err_suffix))
                 continue
 
         # Track the scores.
@@ -259,10 +264,6 @@ def main():
 
         stdpipe.println("Overall score: " + str(grand_total))
         errpipe.println("")
-
-        output_dir = os.path.join(cfg.result_path, os.path.basename(submission))
-        if not os.path.isdir(output_dir):
-            os.mkdir(output_dir)
 
         toolbox.data_to_file(stdpipe.read(), os.path.join(output_dir, cfg.result_log))
         toolbox.data_to_file(errpipe.read(), os.path.join(output_dir, cfg.result_log + cfg.err_suffix))

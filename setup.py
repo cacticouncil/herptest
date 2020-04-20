@@ -2,14 +2,14 @@ from setuptools import setup
 
 setup(
     name='herptest',
-    version='0.9.5',
+    version='0.9.7',
     packages=['herptest',],
     url='https://github.com/cacticouncil/herptest',
     license='GPL 3',
     author='Jeremiah Blanchard',
     author_email='jjb@eng.ufl.edu',
     description='Test suite tools for instructors',
-    install_requires=[ ],
+    install_requires=[ 'edtech' ],
 
     entry_points =
     { 'console_scripts':

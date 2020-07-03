@@ -8,7 +8,8 @@ import os
 import sys
 import logging
 
-import importlib.util as import_util
+import importlib
+import importlib.util
 from ctypes import util
 from os import path
 
@@ -106,12 +107,10 @@ def write_to_file(lines, filename):
         my_file.close()
 
 
-def load_module(filename, module_name=None):
-    if not module_name:
-        module_name = 'unnamed_module.' + path.basename(path.splitext(filename)[0])
-
-    spec = import_util.spec_from_file_location(module_name, filename)
-    module = import_util.module_from_spec(spec)
+def load_module(filename, package_name=None):
+    module_name = (package_name if package_name else '') + path.basename(path.splitext(filename)[0])
+    spec = importlib.util.spec_from_file_location(module_name, filename)
+    module = importlib.util.module_from_spec(spec)
 
     try:
         spec.loader.exec_module(module)

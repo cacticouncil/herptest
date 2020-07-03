@@ -193,3 +193,93 @@ def sed(filename, pattern, repl):
     # Overwrite the original file with the munged temporary file in a manner preserving file attributes.
     shutil.copystat(filename, tmp_file.name)
     shutil.move(tmp_file.name, filename)
+
+
+def convert_curses_capture(capture):
+    converted = []
+
+    # First, match strings we know must be box characters, because they do not occur in natural languages (pattern).        matches = [(line, [match.span() for match in re.finditer(pattern, line)]) for line in capture]
+    pattern = re.compile("((lq+k)|(mqq+j)|(qqqqq+))")
+    matches = [(line, [match.span() for match in pattern.finditer(line)]) for line in capture]
+    for line, match_set in matches:
+        next = 0
+        line_set = []
+        for start, end in match_set:
+            # If there are any characters before the match that we haven't added yet to our string set, add them now.
+            if start != next:
+                line_set.append(line[next:start])
+
+            # Add the matched characters (replace)
+            curses_to_box = str.maketrans("lkmjqx","┌┐└┘─│")
+            line_set.append(line[start:end].translate(curses_to_box))
+            next = end
+        if next != len(line):
+            line_set.append(line[next:])
+        converted.append("".join(line_set))
+
+    # Next, find characters that might be matches, and triangulate using already converted characters.
+    pattern = re.compile("[lkmjqx]")
+    matches = [[match.span() for match in pattern.finditer(line)] for line in converted]
+    for line_no, match_set in enumerate(matches):
+        line = converted[line_no]
+        next = 0
+        line_set = []
+        for index, _ in match_set:
+        # If there are any characters before the match that we haven't added yet to our string set, add them now.
+            if index != next:
+                line_set.append(line[next:index])
+
+            if line[index] == "l":
+                if len(line) > index+1 and line[index+1] == "─":
+                    line_set.append("┌")
+                elif len(converted) < line_no+1 and len(converted[line_no+1]) > index and converted[line_no+1][index] == "│":
+                    line_set.append("┌")
+                else:
+                    line_set.append("l")
+
+            elif line[index] == "k":
+                if index > 0 and line[index-1] == "─":
+                    line_set.append("┐")
+                elif len(converted) < line_no+1 and len(converted[line_no+1]) > index and converted[line_no+1][index] == "│":
+                    line_set.append("┐")
+                else:
+                    line_set.append("k")
+
+            elif line[index] == "m":
+                if len(line) > index+1 and line[index+1] == "─":
+                    line_set.append("└")
+                elif line_no > 0 and len(converted[line_no-1]) > index and converted[line_no-1][index] == "│":
+                    line_set.append("└")
+                else:
+                    line_set.append("m")
+
+            elif line[index] == "j":
+                if index > 0 and line[index-1] == "─":
+                    line_set.append("┘")
+                elif line_no > 0 and len(converted[line_no-1]) > index and converted[line_no-1][index] == "│":
+                    line_set.append("┘")
+                else:
+                    line_set.append("j")
+
+            elif line[index] == "q":
+                if index > 0 and (line[index-1] == "─" or line[index-1] == "└" or line[index-1] == "┌"):
+                    line_set.append("─")
+                elif len(line) > index+1 and (line[index+1] == "─" or line[index+1] == "┘" or line[index+1] == "┐"):
+                    line_set.append("─")
+                else:
+                    line_set.append("q")
+
+            elif line[index] == "x":
+                if line_no > 0 and len(converted[line_no-1]) > index and (converted[line_no-1][index] == "│" or converted[line_no-1][index] == "┌" or converted[line_no-1][index] == "┐"):
+                    line_set.append("│")
+                elif len(converted) > line_no+1 and len(converted[line_no+1]) > index and (converted[line_no+1][index] == "│" or converted[line_no+1][index] == "└" or converted[line_no+1][index] == "┘"):
+                    line_set.append("│")
+                else:
+                    line_set.append("x")
+
+            next = index + 1
+
+        if next != len(line):
+            line_set.append(line[next:])
+        converted[line_no] = "".join(line_set)
+    return converted

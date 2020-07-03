@@ -283,3 +283,31 @@ def convert_curses_capture(capture):
             line_set.append(line[next:])
         converted[line_no] = "".join(line_set)
     return converted
+
+
+def causes_exception(test_me):
+    try:
+        test_me()
+    except:
+        return True
+    return False
+
+
+def can_write_property(target, property_name, test_value):
+    return not causes_exception(lambda: exec("target." + property_name + " = test_value"))
+
+
+def get_public_attr(classtype, exclusions=[], filter_callable=True):
+    key_list = [key for key in classtype.__dict__.keys() if not key.startswith("_")] # Not protected/private
+    key_list = [key for key in key_list if not type(classtype.__dict__[key]).__name__ in exclusions] # Not excluded
+    if filter_callable:
+        key_list = [key for key in key_list if not callable(classtype.__dict__[key])] # Keep non-callable
+    return key_list
+
+
+def get_public_vars(target, filter_callable=True):
+    var_list = [entry for entry in vars(target).keys() if not entry.startswith("_")]
+    if filter_callable:
+        var_list = [key for key in var_list if not callable(vars(target)[key])]
+    return var_list
+

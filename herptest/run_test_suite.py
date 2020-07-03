@@ -19,7 +19,7 @@ from . import toolbox
 from concurrent import futures
 from edtech import sheet
 
-VERSION = '0.9.7'
+VERSION = '0.9.9.2'
 
 cfg = argparse.Namespace()
 cfg.runtime = argparse.Namespace()
@@ -30,9 +30,9 @@ def fill_defaults():
     global cfg
 
     if not hasattr(cfg.build, 'prep_cmd'):
-        cfg.build.prep_cmd = [ "cmake" ]
+        cfg.build.prep_cmd = []
     if not hasattr(cfg.build, 'compile_cmd'):
-        cfg.build.compile_cmd = [ "make", "all" ]
+        cfg.build.compile_cmd = []
 
 
 # handle command line args
@@ -52,7 +52,7 @@ def parse_arguments():
 #    cfg.logformat = "[%(levelname)s] %(message)s"
 
 
-def build_project(source_root, build_root, prepare_cmd, compile_cmd):
+def build_project(source_root, build_root, build_cfg):
     result_error = None
     current_dir = os.getcwd()
 
@@ -62,16 +62,33 @@ def build_project(source_root, build_root, prepare_cmd, compile_cmd):
 
     if build_root:
         # If the build exists, remove old project folder, recreate it, and switch to it.
-        if os.path.isdir(build_root):
+        if os.path.isdir(build_root) and not build_root == source_root:
             shutil.rmtree(build_root)
-
-        os.makedirs(build_root)
+        if not os.path.exists(build_root):
+            os.makedirs(build_root)
         os.chdir(build_root)
 
     try:
-        if prepare_cmd:
-            subprocess.check_output(prepare_cmd + ([source_root] if source_root else []), stderr=subprocess.STDOUT)
-        if compile_cmd:
+        # Prepare to make substitutions to the prep / build commands if applicable.
+        replacements = {key : value for key, value in build_cfg.__dict__.items() if not key in ['prep_cmd', 'compile_cmd']}
+        replacements["source_dir"] = source_root
+        replacements["build_dir"] = build_root
+        template = string.Template("")
+
+        if build_cfg.prep_cmd:
+            # Apply substitutions from the build configuration to the prep command
+            prep_cmd = []
+            for entry in build_cfg.prep_cmd:
+                template.template = entry
+                prep_cmd.append(template.substitute(**replacements))
+            subprocess.check_output(prep_cmd, stderr=subprocess.STDOUT)
+
+        if build_cfg.compile_cmd:
+            # Apply substitutions from the build configuration to the compile command
+            compile_cmd = []
+            for entry in build_cfg.compile_cmd:
+                template.template = entry
+                compile_cmd.append(template.substitute(**replacements))
             subprocess.check_output(compile_cmd, stderr=subprocess.STDOUT)
 
     except (subprocess.CalledProcessError, FileNotFoundError) as error:
@@ -213,12 +230,14 @@ def prepare_and_test_submission(framework_context, submission):
         shutil.rmtree(cfg.build.destination)
 
     os.makedirs(cfg.build.destination)
-    shutil.copytree(cfg.build.base, cfg.build.destination, dirs_exist_ok=True)
+    if cfg.build.base:
+        shutil.copytree(cfg.build.base, cfg.build.destination, dirs_exist_ok=True)
     shutil.copytree(submission, cfg.build.destination, dirs_exist_ok=True)
 
     # Build the project.
-    result_error = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.build.prep_cmd, cfg.build.compile_cmd)
-    if result_error:
+    logging.info("Prepping / building project(s) for " + submission + "... ")
+    error = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.build)
+    if error:
         logging.info("error building (see logs)... ")
         logging.error("Error prepping/building %s - %s: %s" % (submission, type(error).__name__, error))
 
@@ -275,10 +294,10 @@ def main():
     # Build the environment components (only need to do this once.)
     if cfg.build.framework_src and cfg.build.framework_bin:
         if cfg.build.prep_cmd or cfg.build.compile_cmd:
-            info("Building framework environment... ")
-            result_error = build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.build.prep_cmd, cfg.build.compile_cmd)
+            logging.info("Prepping / building framework environment... ")
+            result_error = build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.build)
             if result_error:
-                info(type(result_error).__name__ + ": " + str(result_error) + "\n")
+                logging.info("%s: %s\n" % (type(result_error).__name__, result_error))
                 return
 
         logging.info("initializing framework... ")

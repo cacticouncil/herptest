@@ -6,12 +6,14 @@ import tempfile
 import shutil
 import os
 import sys
+import logging
 
 import importlib.util as import_util
 from ctypes import util
 from os import path
 
 DEFAULT_MAX_READ = 1024 * 1024
+
 
 class PipeSet:
     """Class wrapping python pipes as a set to make it easier to read / write them"""
@@ -43,6 +45,52 @@ class PipeSet:
     def println(self, *argv, **kwargs):
         kwargs['end'] = '\n'
         self.print(*argv, **kwargs)
+
+
+class SelectiveFileHandler(logging.FileHandler):
+    def __init__(self, filename, mode='a', encoding=None, delay=0, add_level=True, **keywords):
+        LOG_ALL = keywords.pop("LOG_ALL", False)
+        self._CRITICAL = keywords.pop("CRITICAL", False or LOG_ALL)
+        self._ERROR = keywords.pop("ERROR", False or LOG_ALL)
+        self._WARNING = keywords.pop("WARNING", False or LOG_ALL)
+        self._INFO = keywords.pop("INFO", False or LOG_ALL)
+        self._DEBUG = keywords.pop("DEBUG", False or LOG_ALL)
+        self._add_level = add_level
+        logging.FileHandler.__init__(self, filename, mode, encoding, delay)
+
+
+    def emit(self, record):
+        if record.levelno == logging.CRITICAL and self._CRITICAL or \
+          record.levelno == logging.ERROR and self._ERROR or \
+          record.levelno == logging.WARNING and self._WARNING or \
+          record.levelno == logging.INFO and self._INFO or \
+          record.levelno == logging.DEBUG and self._DEBUG:
+            if self._add_level:
+                record.msg = "[%s] %s" % (record.levelname, record.msg)
+            logging.FileHandler.emit(self, record)
+
+
+class SelectiveStreamHandler(logging.StreamHandler):
+    def __init__(self, stream=None, add_level=False, **keywords):
+        LOG_ALL = keywords.pop("LOG_ALL", False)
+        self._CRITICAL = keywords.pop("CRITICAL", False or LOG_ALL)
+        self._ERROR = keywords.pop("ERROR", False or LOG_ALL)
+        self._WARNING = keywords.pop("WARNING", False or LOG_ALL)
+        self._INFO = keywords.pop("INFO", False or LOG_ALL)
+        self._DEBUG = keywords.pop("DEBUG", False or LOG_ALL)
+        self._add_level = add_level
+        logging.StreamHandler.__init__(self, stream)
+
+
+    def emit(self, record):
+        if record.levelno == logging.CRITICAL and self._CRITICAL or \
+          record.levelno == logging.ERROR and self._ERROR or \
+          record.levelno == logging.WARNING and self._WARNING or \
+          record.levelno == logging.INFO and self._INFO or \
+          record.levelno == logging.DEBUG and self._DEBUG:
+            if self._add_level:
+                record.msg = "[%s] %s" % (record.levelname, record.msg)
+            logging.StreamHandler.emit(self, record)
 
 
 def data_to_file(data, filename):

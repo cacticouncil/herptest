@@ -12,6 +12,8 @@ import time
 import os.path
 import traceback
 import numbers
+import string
+import logging
 
 from . import toolbox
 from concurrent import futures
@@ -21,8 +23,6 @@ VERSION = '0.9.7'
 
 cfg = argparse.Namespace()
 cfg.runtime = argparse.Namespace()
-
-errpipe = toolbox.PipeSet()
 
 
 # Fill default values
@@ -35,30 +35,21 @@ def fill_defaults():
         cfg.build.compile_cmd = [ "make", "all" ]
 
 
-def info(message):
-    if not cfg.runtime.quiet:
-        sys.stdout.write(message)
-        sys.stdout.flush()
-
-
 # handle command line args
 def parse_arguments():
     global cfg
-    parser = argparse.ArgumentParser(description='A program to run a set of tests for a programming assignment.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description='A program to run a set of tests for a programming assignment.')
     parser.add_help = True
     parser.add_argument('suite_path', nargs='?', default="./", help='path of test suite to load')
-    parser.add_argument('target_path', nargs='?', default="Projects", help='path of the target projects to consider (by subdirectory / folder)')
+    parser.add_argument('target_path', nargs='?', default="Projects", help='path of target projects (by subdirectory)')
     parser.add_argument('-V', '--version', action='version', version='%(prog)s ' + VERSION)
-    parser.add_argument('-q', '--quiet', dest='quiet', action='store_true', help='execute in quiet mode')
-    parser.add_argument('-d', '--debug', dest='debug', action='store_true', help='display debug information')
+    parser.add_argument('-q', '--quiet', dest='INFO', action='store_false', help='execute in quiet mode (console)')
+    parser.add_argument('-w', '--warn', dest='WARN', action='store_true', help='display warning information (console)')
+    parser.add_argument('-d', '--debug', dest='DEBUG', action='store_true', help='capture debug information (logfile)')
     parser.add_argument('-s', '--set', dest='set', default="*", help = 'test only projects designated (e.g., *_LATE*')
     cfg.runtime = parser.parse_args(sys.argv[1:], cfg.runtime)
-
-    # debug program
-    if cfg.runtime.debug:
-        print("SYSTEM ", sys.version)
-
-    return
+    cfg.logformat = "%(message)s"
+#    cfg.logformat = "[%(levelname)s] %(message)s"
 
 
 def build_project(source_root, build_root, prepare_cmd, compile_cmd):
@@ -98,13 +89,14 @@ def run_suite_tests(framework, subject, proj_settings):
         display_name, identifier, points = project
         data_set, score, penalty_totals = run_project_tests(identifier, framework, subject, proj_settings)
 
-        # If the project didn't compile, just print out a single line indicating that.
-        if data_set == None:
-            data_set = [ [] ["Grade: 0 (Does not compile / run)"] ]
+        # If the project didn't compile, just add a single line indicating that.
+        if isinstance(data_set, str):
+            logging.error("Error: %s" % data_set)
+            data_set = [[], ["Grade: 0 (Does not compile / run)"]]
             score = 0
 
         else:
-            # Print out info (for debugging purposes) on the score and penalty values for the project.
+            # Add info on the score and penalty values for the project.
             data_set += [ [], ["Test Cases: %.2f (%.2f%%)" % (score * points, score * 100) ] ]
             overall_penalty = 0
 
@@ -134,9 +126,9 @@ def run_project_tests(name, framework, subject, proj_settings):
     penalty_totals = [0] * (len(proj_settings.test_case_penalties) + len(proj_settings.project_penalties))
     num_of_tests = proj_settings.get_number_of_tests(context)
 
-    if num_of_tests == 0:
+    if not isinstance(num_of_tests, int) or num_of_tests == 0:
         proj_settings.shutdown_project(context)
-        return None, None, None
+        return "get_number_of_tests() returned [%s]" % num_of_tests, None, None
 
     # Add the initial notes at the top (might adjust this later for 'pure' CSV output)
     data_set = [ [ "Number of tests: %d." % num_of_tests ], [] ]
@@ -164,7 +156,7 @@ def run_project_tests(name, framework, subject, proj_settings):
         # Add score, run message, and description as applicable
         row.append('%.2f%%' % (case_score * 100))
         row.append(message if message else '')
-        row.append(proj_settings.get_test_description(test_num, context) if case_score < 1 else '')
+        row.append(proj_settings.get_test_description(test_num, context) if round(case_score, 10) < 1 else '')
 
         if case_score == 0:
             data_set.append(row)
@@ -225,24 +217,23 @@ def prepare_and_test_submission(framework_context, submission):
     shutil.copytree(submission, cfg.build.destination, dirs_exist_ok=True)
 
     # Build the project.
-    info("Building project(s) for " + submission + "... ")
     result_error = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.build.prep_cmd, cfg.build.compile_cmd)
     if result_error:
-        info("error building (see logs)... ")
-        errpipe.print(traceback.format_exc())
+        logging.info("error building (see logs)... ")
+        logging.error("Error prepping/building %s - %s: %s" % (submission, type(error).__name__, error))
 
-    info("Initializing... ")
+    logging.info("Initializing... ")
     subject_context = None
     starting_dir = os.getcwd()
 
     try:
         subject_context = cfg.project.initialize_subject(cfg)
-    except Exception as e:
-        errpipe.print("Error initializing subject " + submission + " - " + traceback.format_exc())
-        info("error initializing (see logs)... ")
+    except Exception as error:
+        logging.error("Error initializing subject %s - %s: %s" % (submission, type(error).__name__, error))
+        logging.info("error initializing (see logs)... ")
 
     os.chdir(starting_dir)
-    info("done.\n")
+    logging.info("done.\n")
 
     starting_dir = os.getcwd()
     results = run_suite_tests(framework_context, subject_context, cfg.project)
@@ -254,6 +245,10 @@ def prepare_and_test_submission(framework_context, submission):
 def main():
     global cfg
     parse_arguments()
+    console_logger = toolbox.SelectiveStreamHandler(INFO=cfg.runtime.INFO, WARNING=cfg.runtime.WARN, CRITICAL=True)
+    logging.basicConfig(format=cfg.logformat, level=logging.DEBUG, handlers=[console_logger])
+    root_logger = logging.getLogger('')
+    console_logger.terminator = ""
 
     # Save the current folder and move to the test suite location.
     starting_dir = os.getcwd()
@@ -286,9 +281,9 @@ def main():
                 info(type(result_error).__name__ + ": " + str(result_error) + "\n")
                 return
 
-        info("initializing framework... ")
+        logging.info("initializing framework... ")
         framework_context = cfg.project.initialize_framework(cfg)
-        info("done.\n")
+        logging.info("done.\n")
     else:
         framework_context = None
 
@@ -299,13 +294,18 @@ def main():
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
 
+        logfile = filename=os.path.join(output_dir, cfg.general.error_log)
+        file_logger = toolbox.SelectiveFileHandler(logfile, mode="w", DEBUG=cfg.runtime.DEBUG, ERROR=True)
+        root_logger.addHandler(file_logger)
+
         with futures.ThreadPoolExecutor() as executor:
             future = executor.submit(prepare_and_test_submission, framework_context, submission)
             try:
                 suite_results = future.result()
             except Exception as e:
-                errpipe.print("Error preparing / running " + submission + " - " + traceback.format_exc())
-                toolbox.data_to_file(errpipe.read(), os.path.join(output_dir, cfg.general.error_log))
+                logging.error("Error preparing / running %s - %s: %s" % (submission, type(e).__name__, e))
+                root_logger.removeHandler(file_logger)
+                file_logger.close()
                 continue
 
         # Track the scores.
@@ -319,10 +319,10 @@ def main():
                 grand_total += result
 
         file_data.append([ "Overall score: %.2f" % grand_total ])
-        errpipe.println("")
 
         sheet.saveCsv(os.path.join(output_dir, cfg.general.result_file), file_data)
-        toolbox.data_to_file(errpipe.read(), os.path.join(output_dir, cfg.general.error_log))
+        root_logger.removeHandler(file_logger)
+        file_logger.close()
         time.sleep(2)
 
     cfg.project.shutdown_framework(framework_context)

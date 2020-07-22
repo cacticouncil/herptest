@@ -20,14 +20,31 @@ def main():
         zf.extractall(path=tmp_path)
 
     submissions = glob.glob(os.path.join(tmp_path, "*"))
+    success_count = 0
+    warning_count = 0
     for submission in submissions:
-        attributes = os.path.basename(submission).rsplit("_", 3)
-        if len(attributes) < 4:
-            print("Warning: [" + submission + "] cannot be reformatted. Skipping.")
-            continue
+        success_count += 1
+        attributes = os.path.basename(submission).split("_", 3)
+
+        # Deal with Canvas appending "LATE" to student names with an underscore (add to name with a dash)
+        if len(attributes) > 1 and attributes[1] == "LATE":
+            attributes[0:2] = [attributes[0] + "-LATE"]
+            if len(attributes) == 3:
+                attributes[2:] = attributes[2].split("_", 1)
+
+        # Handle missing elements in filenames as best we can (limited to weird Canvas output configurations)
+        if len(attributes) == 1:
+            print("Warning: [%s] cannot be reformatted. Assuming generic filename." % submission)
+            attributes[1:1] = ["", "", "submission.file"]
+            warning_count += 1
+        elif len(attributes) == 2:
+            attributes[1:1] = ["", ""]
+        elif len(attributes) == 3:
+            attributes[2:2] = [""]
+
+        student, lms_id, submission_id, filename = attributes
 
         # Extract submission information from the Canvas formatted filename.
-        student, canvas_id, sub_id, filename = attributes
         header, ext = os.path.splitext(filename)
 
         # Handle the special case of gzip files (which by default contain another extension)
@@ -44,7 +61,7 @@ def main():
             except ValueError:
                 pass # Right side of "-" was not a number, so this is not a Canvas submission count suffix.
 
-        student_path = os.path.join(args.destination, student + "_" + canvas_id)
+        student_path = os.path.join(args.destination, student + "_" + lms_id)
         if not os.path.isdir(student_path):
             os.mkdir(student_path)
 
@@ -53,6 +70,7 @@ def main():
                 zf.extractall(path=student_path)
         else:
             shutil.copyfile(submission, os.path.join(student_path, filename))
+    print("Successfuly extracted %d submissions with %d warnings." % (success_count, warning_count))
 
 if __name__ == "__main__":
     main()

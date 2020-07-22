@@ -9,7 +9,7 @@ setup(
     author='Jeremiah Blanchard',
     author_email='jjb@eng.ufl.edu',
     description='Test suite tools for instructors',
-    install_requires=[ 'edtech' ],
+    install_requires=[],
 
     entry_points =
     { 'console_scripts':

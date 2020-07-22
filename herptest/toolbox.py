@@ -1,3 +1,4 @@
+import csv
 import ctypes
 import _ctypes
 import hashlib
@@ -12,6 +13,7 @@ import importlib
 import importlib.util
 from ctypes import util
 from os import path
+from numbers import Number
 
 DEFAULT_MAX_READ = 1024 * 1024
 
@@ -310,4 +312,38 @@ def get_public_vars(target, filter_callable=True):
     if filter_callable:
         var_list = [key for key in var_list if not callable(vars(target)[key])]
     return var_list
+
+
+def save_csv(filename, row_data, insert_key = False, dialect = 'excel'):
+    # Open file for writing
+    with open(filename, 'w', newline = '') as csvFile:
+        writer = csv.writer(csvFile, dialect, quotechar='"', delimiter=',')
+
+        # Write the data
+        if insert_key:
+            for key, row in row_data.iteritems():
+                print("Key: " + key + " Value: " + row)
+                writer.writerow('{:f}'.format(val) if isinstance(val, Number) else val for val in [ key ] + row)
+        else:
+            for row in row_data:
+                writer.writerow('{:f}'.format(val) if isinstance(val, Number) else val for val in row)
+
+        csvFile.close()
+
+
+def append_csv(filename, row_data, insert_key = False, dialect = 'excel'):
+    # Open file for appending
+    with open(filename, 'a', newline = '') as csvFile:
+        writer = csv.writer(csvFile, dialect, quotechar='"', delimiter=',')
+
+        # Write the data
+        if insert_key:
+            for key, row in row_data.iteritems():
+                print("Key: " + key + " Value: " + row)
+                writer.writerow('{:f}'.format(val) if isinstance(val, Number) else val for val in [ key ] + row)
+        else:
+            for row in row_data:
+                writer.writerow('{:f}'.format(val) if isinstance(val, Number) else val for val in row)
+
+        csvFile.close()
 

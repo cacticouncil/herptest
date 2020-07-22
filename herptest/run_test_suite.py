@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2017 Cacti Council Inc.
+# Copyright (c) 2017 Cacti Council Inc., 2018-2020 University of Florida
 
 import argparse
 import glob
@@ -17,7 +17,6 @@ import logging
 
 from . import toolbox
 from concurrent import futures
-from edtech import sheet
 
 VERSION = '0.9.9.2'
 
@@ -338,8 +337,8 @@ def main():
                 grand_total += result
 
         file_data.append([ "Overall score: %.2f" % grand_total ])
+        toolbox.save_csv(os.path.join(output_dir, cfg.general.result_file), file_data)
 
-        sheet.saveCsv(os.path.join(output_dir, cfg.general.result_file), file_data)
         root_logger.removeHandler(file_logger)
         file_logger.close()
         time.sleep(2)

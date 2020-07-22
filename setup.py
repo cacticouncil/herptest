@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='herptest',
-    version='0.9.9.2',
+    version='0.9.9.3',
     packages=['herptest',],
     url='https://github.com/cacticouncil/herptest',
     license='GPL 3',

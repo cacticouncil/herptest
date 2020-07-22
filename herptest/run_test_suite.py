@@ -24,19 +24,12 @@ cfg = argparse.Namespace()
 cfg.runtime = argparse.Namespace()
 
 
-# Fill default values
-def fill_defaults():
-    global cfg
-
-    if not hasattr(cfg.build, 'prep_cmd'):
-        cfg.build.prep_cmd = []
-    if not hasattr(cfg.build, 'compile_cmd'):
-        cfg.build.compile_cmd = []
-
-
 # handle command line args
 def parse_arguments():
-    global cfg
+#    global cfg
+#    cfg.runtime = parser.parse_args(sys.argv[1:], cfg.runtime)
+#    cfg.logformat = "%(message)s"
+#    cfg.logformat = "[%(levelname)s] %(message)s"
     parser = argparse.ArgumentParser(description='A program to run a set of tests for a programming assignment.')
     parser.add_help = True
     parser.add_argument('suite_path', nargs='?', default="./", help='path of test suite to load')
@@ -46,8 +39,10 @@ def parse_arguments():
     parser.add_argument('-w', '--warn', dest='WARN', action='store_true', help='display warning information (console)')
     parser.add_argument('-d', '--debug', dest='DEBUG', action='store_true', help='capture debug information (logfile)')
     parser.add_argument('-s', '--set', dest='set', default="*", help = 'test only projects designated (e.g., *_LATE*')
-    cfg.runtime = parser.parse_args(sys.argv[1:], cfg.runtime)
-    cfg.logformat = "%(message)s"
+    config = parser.parse_args(sys.argv[1:])
+    config.logformat = "%(message)s"
+    return config
+#    cfg.runtime = parser.parse_args(sys.argv[1:], cfg.runtime)
 #    cfg.logformat = "[%(levelname)s] %(message)s"
 
 
@@ -207,16 +202,29 @@ def run_project_tests(name, framework, subject, proj_settings):
     return data_set, score / num_of_tests, penalty_totals
 
 
-def make_build_paths_absolute(settings):
-    settings.base = os.path.abspath(settings.base) if settings.base else None
-    settings.destination = os.path.abspath(settings.destination) if settings.destination else None
-    settings.resources = os.path.abspath(settings.resources) if settings.resources else None
+def process_configuration(config):
+    if not config:
+        return None
 
-    settings.subject_src = os.path.abspath(settings.subject_src) if settings.subject_src else None
-    settings.subject_bin = os.path.abspath(settings.subject_bin) if settings.subject_bin else None
-    settings.framework_src = os.path.abspath(settings.framework_src) if settings.framework_src else None
-    settings.framework_bin = os.path.abspath(settings.framework_bin) if settings.framework_bin else None
+    # Fill default values
+    if not hasattr(config.build, 'prep_cmd'):
+        config.build.prep_cmd = []
+    if not hasattr(config.build, 'compile_cmd'):
+        config.build.compile_cmd = []
 
+    # Make configuration paths absolute
+    config.general.result_path = os.path.abspath(config.general.result_path) if config.general.result_path else None
+
+    config.build.base = os.path.abspath(config.build.base) if config.build.base else None
+    config.build.destination = os.path.abspath(config.build.destination) if config.build.destination else None
+    config.build.resources = os.path.abspath(config.build.resources) if config.build.resources else None
+
+    config.build.subject_src = os.path.abspath(config.build.subject_src) if config.build.subject_src else None
+    config.build.subject_bin = os.path.abspath(config.build.subject_bin) if config.build.subject_bin else None
+    config.build.framework_src = os.path.abspath(config.build.framework_src) if config.build.framework_src else None
+    config.build.framework_bin = os.path.abspath(config.build.framework_bin) if config.build.framework_bin else None
+
+    return config
 
 # For each submission, copy the base files, then the submission, into the destination folder.
 def prepare_and_test_submission(framework_context, submission):
@@ -261,10 +269,10 @@ def prepare_and_test_submission(framework_context, submission):
 
 
 def main():
-    global cfg
-    parse_arguments()
+    global cfg # TODO: Eventually take this out of global scope for simplicity
+    cfg.runtime = parse_arguments()
     console_logger = toolbox.SelectiveStreamHandler(INFO=cfg.runtime.INFO, WARNING=cfg.runtime.WARN, CRITICAL=True)
-    logging.basicConfig(format=cfg.logformat, level=logging.DEBUG, handlers=[console_logger])
+    logging.basicConfig(format=cfg.runtime.logformat, level=logging.DEBUG, handlers=[console_logger])
     root_logger = logging.getLogger('')
     console_logger.terminator = ""
 
@@ -273,22 +281,24 @@ def main():
     os.chdir(cfg.runtime.suite_path)
 
     # Load the config for this project.
-    config = toolbox.load_module("config.py")
-
-    if not config:
+    if not (config := process_configuration(toolbox.load_module("config.py"))):
+        logging.info("Error: no configuration file. Exiting...\n")
         return
 
     cfg.project = config.project
     cfg.build = config.build
     cfg.general = config.general
-    fill_defaults()
 
     # Prepare paths
-    make_build_paths_absolute(cfg.build)
-    cfg.general.result_path = os.path.abspath(cfg.general.result_path) if cfg.general.result_path else None
-
     if not os.path.isdir(cfg.general.result_path):
         os.mkdir(cfg.general.result_path)
+
+    summary_path = os.path.join(cfg.general.result_path, cfg.general.summary_file)
+
+    try:
+        toolbox.save_csv(summary_path, [[ "Student", "LMS ID", "Score" ]])
+    except Exception as e:
+        logging.info("Warning: couldn't open summary file for writing: [%s]" % summary_path)
 
     # Build the environment components (only need to do this once.)
     if cfg.build.framework_src and cfg.build.framework_bin:
@@ -307,6 +317,8 @@ def main():
 
     # Prepare and run each submission.
     for submission in glob.glob(os.path.join(cfg.runtime.target_path, cfg.runtime.set)):
+        submission_info = os.path.basename(submission).split("_", 1)
+        student_name, lms_id = submission_info + ["NONE"] * (2 - len(submission_info))
         output_dir = os.path.join(cfg.general.result_path, os.path.basename(submission))
 
         if not os.path.isdir(output_dir):
@@ -326,10 +338,10 @@ def main():
                 file_logger.close()
                 continue
 
-        # Track the scores.
+        # Generate and save individual test score information to results file.
         grand_total = 0.0
 
-        file_data = [ [ "Scores for %s..." % os.path.basename(submission) ] ]
+        file_data = [["Scores for %s (LMS ID: %s)..." % (student_name, lms_id)]]
 
         if suite_results:
             for name, result, data_set in suite_results:
@@ -338,6 +350,13 @@ def main():
 
         file_data.append([ "Overall score: %.2f" % grand_total ])
         toolbox.save_csv(os.path.join(output_dir, cfg.general.result_file), file_data)
+
+        # Add data to summary file for this submission.
+        try:
+            toolbox.append_csv(summary_path, [[student_name, lms_id, grand_total]])
+        except:
+            # Fail silently; we should have already detected the error when creating the file.
+            pass
 
         root_logger.removeHandler(file_logger)
         file_logger.close()

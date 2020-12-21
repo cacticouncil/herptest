@@ -18,7 +18,7 @@ import logging
 from . import toolbox
 from concurrent import futures
 
-VERSION = '0.9.9.2'
+VERSION = '0.9.9.5'
 
 cfg = argparse.Namespace()
 cfg.runtime = argparse.Namespace()
@@ -35,6 +35,7 @@ def parse_arguments():
     parser.add_argument('suite_path', nargs='?', default="./", help='path of test suite to load')
     parser.add_argument('target_path', nargs='?', default="Projects", help='path of target projects (by subdirectory)')
     parser.add_argument('-V', '--version', action='version', version='%(prog)s ' + VERSION)
+    parser.add_argument('-t', '--threads', dest='threads', action='store_true', help='use threads instead of processes')
     parser.add_argument('-q', '--quiet', dest='INFO', action='store_false', help='execute in quiet mode (console)')
     parser.add_argument('-w', '--warn', dest='WARN', action='store_true', help='display warning information (console)')
     parser.add_argument('-d', '--debug', dest='DEBUG', action='store_true', help='capture debug information (logfile)')
@@ -54,36 +55,49 @@ def build_project(source_root, build_root, build_cfg):
     if not build_root:
         build_root = source_root
 
-    if build_root:
-        # If the build exists, remove old project folder, recreate it, and switch to it.
-        if os.path.isdir(build_root) and not build_root == source_root:
-            shutil.rmtree(build_root)
-        if not os.path.exists(build_root):
-            os.makedirs(build_root)
-        os.chdir(build_root)
+    # If the build exists, remove old project folder, recreate it, and switch to it.
+    if os.path.isdir(build_root) and not build_root == source_root:
+        shutil.rmtree(build_root)
+    if not os.path.exists(build_root):
+        os.makedirs(build_root)
+    os.chdir(build_root)
 
     try:
         # Prepare to make substitutions to the prep / build commands if applicable.
-        replacements = {key : value for key, value in build_cfg.__dict__.items() if not key in ['prep_cmd', 'compile_cmd']}
+        replacements = {key : value for key, value in build_cfg.__dict__.items() if not key in ['prep_cmd', 'compile_cmd', 'post_cmd']}
         replacements["source_dir"] = source_root
         replacements["build_dir"] = build_root
         template = string.Template("")
 
-        if build_cfg.prep_cmd:
-            # Apply substitutions from the build configuration to the prep command
-            prep_cmd = []
-            for entry in build_cfg.prep_cmd:
-                template.template = entry
-                prep_cmd.append(template.substitute(**replacements))
-            subprocess.check_output(prep_cmd, stderr=subprocess.STDOUT)
+        if hasattr(build_cfg, 'prep_cmd') and build_cfg.prep_cmd:
+            # Apply substitutions from the build configuration to the prep command(s)
+            source_cmds = build_cfg.prep_cmd if isinstance(build_cfg.prep_cmd, tuple) else (build_cfg.prep_cmd,)
+            for source_cmd in source_cmds:
+                prep_cmd = []
+                for entry in source_cmd:
+                    template.template = entry
+                    prep_cmd.append(template.substitute(**replacements))
+                subprocess.check_output(prep_cmd, stderr=subprocess.STDOUT)
 
-        if build_cfg.compile_cmd:
+        if hasattr(build_cfg, 'compile_cmd') and build_cfg.compile_cmd:
             # Apply substitutions from the build configuration to the compile command
-            compile_cmd = []
-            for entry in build_cfg.compile_cmd:
-                template.template = entry
-                compile_cmd.append(template.substitute(**replacements))
-            subprocess.check_output(compile_cmd, stderr=subprocess.STDOUT)
+            source_cmds = build_cfg.compile_cmd if isinstance(build_cfg.compile_cmd, tuple) else (build_cfg.compile_cmd,)
+            for source_cmd in source_cmds:
+                compile_cmd = []
+                for entry in build_cfg.compile_cmd:
+                    template.template = entry
+                    compile_cmd.append(template.substitute(**replacements))
+                subprocess.check_output(compile_cmd, stderr=subprocess.STDOUT)
+
+        if hasattr(build_cfg, 'post_cmd') and build_cfg.post_cmd:
+            # Apply substitutions from the build configuration to the prep command(s)
+            source_cmds = build_cfg.post_cmd if isinstance(build_cfg.post_cmd, tuple) else (build_cfg.post_cmd,)
+            for source_cmd in source_cmds:
+                post_cmd = []
+                for entry in source_cmd:
+                    template.template = entry
+                    post_cmd.append(template.substitute(**replacements))
+                subprocess.check_output(post_cmd, stderr=subprocess.STDOUT)
 
     except (subprocess.CalledProcessError, FileNotFoundError) as error:
         result_error = error
@@ -94,11 +108,14 @@ def build_project(source_root, build_root, build_cfg):
 
 def run_suite_tests(framework, subject, proj_settings):
     results = []
+    exception_sets = {}
 
+    print("In suite for", subject)
     # Run each project's tests.
     for project in proj_settings.projects:
         display_name, identifier, points = project
-        data_set, score, penalty_totals = run_project_tests(identifier, framework, subject, proj_settings)
+        data_set, score, penalty_totals, exception_list = run_project_tests(identifier, framework, subject, proj_settings)
+        exception_sets[project] = exception_list
 
         # If the project didn't compile, just add a single line indicating that.
         if isinstance(data_set, str):
@@ -129,10 +146,11 @@ def run_suite_tests(framework, subject, proj_settings):
         data_set = [ ["Project %s" % display_name] ] + data_set
         results.append((display_name, score, data_set))
 
-    return results
+    return results, exception_sets
 
 
 def run_project_tests(name, framework, subject, proj_settings):
+    exception_list = []
     context = proj_settings.initialize_project(name, framework, subject, proj_settings)
     penalty_totals = [0] * (len(proj_settings.test_case_penalties) + len(proj_settings.project_penalties))
     num_of_tests = proj_settings.get_number_of_tests(context)
@@ -153,7 +171,13 @@ def run_project_tests(name, framework, subject, proj_settings):
     for test_num in range(0, num_of_tests):
         # Set up the row for this test and run it.
         row = [ '%d' % test_num ]
-        case_result = proj_settings.run_case_test(test_num, context)
+        try:
+            case_result = proj_settings.run_case_test(test_num, context)
+        except Exception as e:
+            stack_trace = traceback.format_exc()
+            exception_list.append("Test %d, %s: %s\n%s" % (test_num, type(e).__name__, e, stack_trace))
+            case_result = 0
+
 
         # If we successfuly completed the run, this should be a number; otherwise, a message.
         if isinstance(case_result, numbers.Number):
@@ -161,7 +185,7 @@ def run_project_tests(name, framework, subject, proj_settings):
             message = None
         else:
             case_score = 0
-            message = case_result
+            message = str(case_result)
 
         score += case_score
         # Add score, run message, and description as applicable
@@ -184,7 +208,7 @@ def run_project_tests(name, framework, subject, proj_settings):
             else:
                 penalty_name = None
                 maginitude = 0
-                message = pen_result
+                message = str(pen_result)
 
             penalty_totals[penalty_num] += penalty * magnitude * case_score / num_of_tests
             row.append('%.2f%%' % (penalty * 100))
@@ -199,7 +223,7 @@ def run_project_tests(name, framework, subject, proj_settings):
 
     # Return the data set, score (proportion), and penalty totals
     proj_settings.shutdown_project(context)
-    return data_set, score / num_of_tests, penalty_totals
+    return data_set, score / num_of_tests, penalty_totals, exception_list
 
 
 def process_configuration(config):
@@ -225,6 +249,24 @@ def process_configuration(config):
     config.build.framework_bin = os.path.abspath(config.build.framework_bin) if config.build.framework_bin else None
 
     return config
+
+# For each submission, copy the base files, then the submission, into the destination folder.
+def prepare_and_init_framework(build_cfg, proj_cfg):
+    # Build the environment components (only need to do this once.)
+    if build_cfg.framework_src and build_cfg.framework_bin:
+        if build_cfg.prep_cmd or build_cfg.compile_cmd:
+            logging.info("Prepping / building framework environment... ")
+            result_error = build_project(build_cfg.framework_src, build_cfg.framework_bin, build_cfg)
+            if result_error:
+                logging.info("%s: %s\n" % (type(result_error).__name__, result_error))
+                return
+
+        logging.info("initializing framework... ")
+        framework_data = proj_cfg.initialize_framework(cfg)
+        logging.info("done.\n")
+    else:
+        framework_data = None
+    return framework_data
 
 # For each submission, copy the base files, then the submission, into the destination folder.
 def prepare_and_test_submission(framework_context, submission):
@@ -262,58 +304,64 @@ def prepare_and_test_submission(framework_context, submission):
     logging.info("done.\n")
 
     starting_dir = os.getcwd()
-    results = run_suite_tests(framework_context, subject_context, cfg.project)
+    results, exception_sets = run_suite_tests(framework_context, subject_context, cfg.project)
     cfg.project.shutdown_subject(subject_context)
     os.chdir(starting_dir)
-    return results
+    return results, exception_sets
 
 
 def main():
     global cfg # TODO: Eventually take this out of global scope for simplicity
     cfg.runtime = parse_arguments()
-    console_logger = toolbox.SelectiveStreamHandler(INFO=cfg.runtime.INFO, WARNING=cfg.runtime.WARN, CRITICAL=True)
-    logging.basicConfig(format=cfg.runtime.logformat, level=logging.DEBUG, handlers=[console_logger])
-    root_logger = logging.getLogger('')
-    console_logger.terminator = ""
 
     # Save the current folder and move to the test suite location.
     starting_dir = os.getcwd()
     os.chdir(cfg.runtime.suite_path)
 
-    # Load the config for this project.
-    if not (config := process_configuration(toolbox.load_module("config.py"))):
-        logging.info("Error: no configuration file. Exiting...\n")
+    # Load the config file for this project.
+    if not os.path.isfile("config.py") or not (config := process_configuration(toolbox.load_module("config.py"))):
+        sys.stderr.write("Error: no configuration file. Exiting...\n")
         return
 
     cfg.project = config.project
     cfg.build = config.build
     cfg.general = config.general
 
-    # Prepare paths
+    # Prepare result paths.
     if not os.path.isdir(cfg.general.result_path):
         os.mkdir(cfg.general.result_path)
-
     summary_path = os.path.join(cfg.general.result_path, cfg.general.summary_file)
 
+    # Set up logging.
+    console_logger = toolbox.SelectiveStreamHandler(INFO=cfg.runtime.INFO, WARNING=cfg.runtime.WARN, CRITICAL=True)
+    logging.basicConfig(format=cfg.runtime.logformat, level=logging.DEBUG, handlers=[console_logger])
+    root_logger = logging.getLogger('')
+    console_logger.terminator = ""
+
+    logfile = os.path.join(cfg.general.result_path, cfg.general.error_log)
+    file_logger = toolbox.SelectiveFileHandler(logfile, mode="w", DEBUG=cfg.runtime.DEBUG, ERROR=True)
+    root_logger.addHandler(file_logger)
+
+    # Write header for summary file.
     try:
         toolbox.save_csv(summary_path, [[ "Student", "LMS ID", "Score" ]])
     except Exception as e:
         logging.info("Warning: couldn't open summary file for writing: [%s]" % summary_path)
 
-    # Build the environment components (only need to do this once.)
-    if cfg.build.framework_src and cfg.build.framework_bin:
-        if cfg.build.prep_cmd or cfg.build.compile_cmd:
-            logging.info("Prepping / building framework environment... ")
-            result_error = build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.build)
-            if result_error:
-                logging.info("%s: %s\n" % (type(result_error).__name__, result_error))
-                return
+    # Initialize the framework / get any important info
+#    with futures.ProcessPoolExecutor() as executor:
+#        try:
+#            future = executor.submit(prepare_and_init_framework, cfg.build, cfg.project)
+#            framework_context = future.result()
+            # This is a fatal error; if we can't initalize the framework, we should stop here.
+#        except Exception as e:
+#            sys.stderr.write("Error initializing framework - %s: %s. Exiting.\n" % (type(e).__name__, e))
+#            exit()
+    framework_context = prepare_and_init_framework(cfg.build, cfg.project)
 
-        logging.info("initializing framework... ")
-        framework_context = cfg.project.initialize_framework(cfg)
-        logging.info("done.\n")
-    else:
-        framework_context = None
+    # Close general log file and move on to student-specific logs.
+    root_logger.removeHandler(file_logger)
+    file_logger.close()
 
     # Prepare and run each submission.
     for submission in glob.glob(os.path.join(cfg.runtime.target_path, cfg.runtime.set)):
@@ -324,16 +372,23 @@ def main():
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
 
-        logfile = filename=os.path.join(output_dir, cfg.general.error_log)
+        logfile = os.path.join(output_dir, cfg.general.error_log)
         file_logger = toolbox.SelectiveFileHandler(logfile, mode="w", DEBUG=cfg.runtime.DEBUG, ERROR=True)
         root_logger.addHandler(file_logger)
 
-        with futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(prepare_and_test_submission, framework_context, submission)
+        exec_class = futures.ThreadPoolExecutor if cfg.runtime.threads else futures.ProcessPoolExecutor
+        with exec_class() as executor:
             try:
-                suite_results = future.result()
+                future = executor.submit(prepare_and_test_submission, framework_context, submission)
+                suite_results, exception_sets = future.result()
+                # If there were exceptions in the tests, we should log them.
+                for project, exception_list in exception_sets.items():
+                   if len(exception_list) > 0:
+                       log_header = "Exceptions for %s\n%s\n" % (project, "-"*(15 + len(project)))
+                       logging.error(log_header + "\n".join(exception_list))
             except Exception as e:
-                logging.error("Error preparing / running %s - %s: %s" % (submission, type(e).__name__, e))
+                stack_trace = traceback.format_exc()
+                logging.error("Error preparing / running %s - %s: %s\n%s" % (submission, type(e).__name__, e, stack_trace))
                 root_logger.removeHandler(file_logger)
                 file_logger.close()
                 continue
@@ -363,6 +418,7 @@ def main():
         time.sleep(2)
 
     cfg.project.shutdown_framework(framework_context)
+    print("Framework shutdown")
     # Return to where we started at.
     os.chdir(starting_dir)
 

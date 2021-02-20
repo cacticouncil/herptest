@@ -12,7 +12,6 @@ import string
 import logging
 import collections
 import itertools
-import ansi_capture
 import pexpect
 import time
 import pyte
@@ -491,6 +490,10 @@ def get_value_or_error_msg(target_function, params):
             return str(e)
         except:
             return e.__class__.__name__
+
+
+def get_type_and_value_string(target):
+    return type(target).__name__ + ": " + str(target)
 
 
 def ansi_to_text(text, lines=30, columns=80):

@@ -2,14 +2,14 @@ from setuptools import setup
 
 setup(
     name='herptest',
-    version='0.9.9.5',
+    version='0.9.9.6',
     packages=['herptest',],
     url='https://github.com/cacticouncil/herptest',
     license='GPL 3',
     author='Jeremiah Blanchard',
     author_email='jjb@eng.ufl.edu',
     description='Test suite tools for instructors',
-    install_requires=[],
+    install_requires=['pexpect', 'pyte', 'pathos'],
 
     entry_points =
     { 'console_scripts':

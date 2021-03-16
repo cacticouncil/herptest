@@ -134,7 +134,7 @@ def run_suite_tests(subject, framework, cfg):
             score = (score - min(test_set.max_penalty, overall_penalty)) * test_set.max_score
 
         # Add to the results list.
-        data_set = [ ["Test-Set %s" % test_set.name] ] + data_set
+        data_set = [["Test-Set %s" % test_set.name]] + data_set
         results.append((test_set.name, score, data_set))
 
     return results, exception_sets
@@ -375,10 +375,10 @@ def main():
 
         if suite_results:
             for name, result, data_set in suite_results:
-                file_data.extend(data_set + [ [ "%s: %.3f" % (name, result) ] ])
+                file_data.extend([[]] + data_set + [["Set Total: %.3f" % result]])
                 grand_total += result
 
-        file_data.append([ "Overall score: %.2f" % grand_total ])
+        file_data.extend([[], ["Overall Score: %.2f" % grand_total]])
         toolbox.save_csv(os.path.join(output_dir, cfg.general.result_file), file_data)
 
         # Add data to summary file for this submission.

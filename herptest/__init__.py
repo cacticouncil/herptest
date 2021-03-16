@@ -1,35 +1,62 @@
+import inspect
 import os.path
 from types import SimpleNamespace
+from easydict import EasyDict
 
 # Test Suite Configuration
-class Config:
-    def __init__(self, runtime=None, test_sets=None):
-        self.build = SimpleNamespace()
-        self.general = SimpleNamespace()
-        self.runtime = runtime
-        self.sets = test_sets
+class Config(EasyDict):
+    def __init__(self, runtime=None, test_sets=None, **keywords):
+        super().__init__()
+        self["runtime"] = runtime
+        self["sets"] = test_sets
 
         # Log locations
-        self.general.result_path = "Results"
-        self.general.result_file = "result.csv"
-        self.general.error_log = "error.log"
-        self.general.summary_file = "summary.csv"
+        self.general = EasyDict({"result_path":  "Results",
+                        "result_file":  "result.csv",
+                        "error_log":    "error.log",
+                        "summary_file": "summary.csv"})
 
         # Paths to base files, target source destination, and resources
-        self.build.base = None
-        self.build.destination = None
-        self.build.resources = None
+        self.build = EasyDict({"base":          None,
+                               "destination":   None,
+                               "resources":     None,
 
         # Build parameters: source folder (src), build destination (bin)
-        self.build.subject_src = "Source/Subject"
-        self.build.subject_bin = "Build/Subject"
-
-        self.build.framework_src = None
-        self.build.framework_bin = None
+                               "subject_src":   "Source/Subject",
+                               "subject_bin":   "Build/Subject",
+                               "framework_src": "Source/Subject",
+                               "framework_bin": "Build/Subject",
 
         # Build commands: preparing & compiling (additional keys: $source_dir, $build_dir)
-        self.build.prep_cmd = []
-        self.build.compile_cmd = []
+        # Command format: list[] is single command's elements (command and arguments); tuple() is list of commands.
+                               "prep_cmd": None,
+                               "compile_cmd": None,
+                               "post_cmd": None})
+
+        # Process keywords to make additional assignments.
+        for key, value in keywords:
+             self[key] = value
+
+#            parent = self
+            # If this is a top-level assignment, it's easy-peasy. :)
+#            if not "." in key:
+#                if not key.isidentifier():
+#                    raise Exception("Tried to use invalid string in easydict")
+#                parent[key] = value
+#                continue
+            # If the key is nested, split off the "final" key from the parent key so we can iterate.
+#            parent_key, final_key = key.rsplit(".", 1)
+#            if not final_key.isidentifier():
+#                raise Exception("Tried to use invalid string in easydict")
+            # For each parent key section, traverse, adding dictionaries as needed.
+#            for section in parent_key.split("."):
+#                if not section.isidentifier():
+#                    raise Exception("Tried to use invalid string in easydict")
+                # If the section doesn't exist, add it. Then traverse into that section.
+#                if not hasattr(parent, section):
+#                    parent.section = EasyDict()
+#                parent = parent[section]
+#            parent[final_key] = value
 
 
     # Make configuration paths absolute
@@ -51,7 +78,7 @@ class Config:
 
     # Returns framework context
     def initialize_framework(self):
-        None
+        return None
 
 
     def shutdown_framework(self, framework_context):
@@ -82,21 +109,41 @@ class TestSet:
     def __init__(self, name, id, num_tests, test_function, **keywords):
         self._name = name
         self._id = id
-        self.run_case_test = test_function
-        self.get_num_tests = num_tests if callable(num_tests) else lambda *args, **kwargs: num_tests
 
+        # Assign the test count function. If it isn't valid, throw an exception.
+        if isinstance(num_tests, int):
+            self.get_num_tests = lambda *args, **kwargs: num_tests
+        elif callable(num_tests):
+            if len(inspect.getfullargspec(num_tests).args) == len(inspect.getfullargspec(TestSet.__num_tests_template).args):
+               self.get_num_tests = num_tests
+            else:
+                raise Exception("Test count function has wrong number of paramters")
+        else:
+            raise Exception("Test count is invalid type (must be callable or integer)")
+
+        # Assign the test run function. If it isn't valid, throw an exception.
+        if callable(test_function):
+            if len(inspect.getfullargspec(test_function).args) == len(inspect.getfullargspec(TestSet.__run_test_template).args):
+                self.run_case_test = test_function
+            else:
+                raise Exception("Test run function has wrong number of paramters")
+        else:
+            raise Exception("Test run function is not callable")
+
+        # Grab optional keyword argument values
         self._max_score = keywords.pop("max_score", 100.0)
         self._max_penalty = keywords.pop("max_penalty", 0.0)
-        self.get_test_desc = keywords.pop("test_desc", self.__class__.__get_test_description)
+        self.get_test_desc = keywords.pop("test_desc", TestSet.__get_test_description)
 
+        # Initialize penalty lists
         self._case_penalties = []
         self._set_penalties = []
         #self.project_penalties = [ ("Time", 0.3) ]
         #self.test_case_penalties = [ ("Leaks", 0.3), ("Memory", 0.3) ]
         #self.max_penalty = 0.3
-        #self._case_penalties = keywords.pop("case_penalties", [])
-        #self._set_penalties = keywords.pop("set_penalties", [])
         #self._max_penalty = keywords.pop("max_penalty", 0.0)
+        #self._set_penalties = keywords.pop("set_penalties", [])
+        #self._case_penalties = keywords.pop("case_penalties", [])
 
 
     @property
@@ -132,6 +179,17 @@ class TestSet:
     @property
     def max_penalty(self):
         return self._max_penalty
+
+
+    @staticmethod
+    def __num_tests_template(set_context, subject, framework, cfg):
+        raise Exception("Template function should never be called!")
+
+
+    @staticmethod
+    def __run_test_template(test_num, set_context, subject, framework, cfg):
+        raise Exception("Template function should never be called!")
+        pass
 
 
     @staticmethod

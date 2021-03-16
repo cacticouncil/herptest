@@ -286,8 +286,14 @@ def main():
     os.chdir(runtime.suite_path)
 
     # Load the config file for this project.
-    if not os.path.isfile("config.py") or not (config := toolbox.load_module("config.py")):
-        sys.stderr.write("Error: no configuration file. Exiting...\n")
+    config_path = os.path.join("Settings","config.py")
+
+    if not os.path.isdir("Settings"):
+        sys.stderr.write("Error: no settings folder. Exiting...\n")
+        return
+
+    elif not os.path.isfile(config_path) or not (config := toolbox.load_module(config_path)):
+        sys.stderr.write("Error: could not load configuration file. Exiting...\n")
         return
 
     cfg = config.get_suite_config(runtime)

@@ -128,19 +128,25 @@ def write_to_file(lines, filename):
     start_dir = os.getcwd()
     os.chdir(working_dir)
 
+def load_relative_module(target, neighbor, package_name=None):
+    if not os.path.isabs(target):
+        target = os.path.join(path.abspath(os.path.dirname(neighbor)), target)
+    return load_module(target, package_name)
+
+
 def load_module(filename, package_name=None):
     start_dir = os.getcwd()
     mod_dir, mod_file = path.split(filename)
     sys.path.append('./')
-
-    if mod_dir:
-        os.chdir(mod_dir)
-
-    module_name = (package_name if package_name else '') + path.splitext(mod_file)[0]
-    spec = importlib.util.spec_from_file_location(module_name, mod_file)
-    module = importlib.util.module_from_spec(spec)
+    module = None
 
     try:
+        if mod_dir:
+            os.chdir(mod_dir)
+
+        module_name = (package_name if package_name else '') + path.splitext(mod_file)[0]
+        spec = importlib.util.spec_from_file_location(module_name, mod_file)
+        module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
     except FileNotFoundError as e:
         print(type(e).__name__ + ": " + str(e))

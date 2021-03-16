@@ -30,7 +30,7 @@ def parse_arguments():
     parser.add_argument('suite_path', nargs='?', default="./", help='path of test suite to load')
     parser.add_argument('target_path', nargs='?', default="Projects", help='path of target projects (by subdirectory)')
     parser.add_argument('-V', '--version', action='version', version='%(prog)s ' + VERSION)
-    parser.add_argument('-t', '--threads', dest='threads', action='store_true', help='use threads instead of processes')
+    parser.add_argument('-t', '--threaded', dest='threaded', action='store_true', help='use threads instead of processes')
     parser.add_argument('-q', '--quiet', dest='INFO', action='store_false', help='execute in quiet mode (console)')
     parser.add_argument('-w', '--warn', dest='WARN', action='store_true', help='display warning information (console)')
     parser.add_argument('-d', '--debug', dest='DEBUG', action='store_true', help='capture debug information (logfile)')
@@ -348,8 +348,8 @@ def main():
         file_logger = toolbox.SelectiveFileHandler(logfile, mode="w", DEBUG=cfg.runtime.DEBUG, ERROR=True)
         root_logger.addHandler(file_logger)
 
-        exec_class = pools.ThreadPool if cfg.runtime.threads else pools.ProcessPool
-#        exec_class = futures.ThreadPoolExecutor if cfg.runtime.threads else futures.ProcessPoolExecutor
+        exec_class = pools.ThreadPool if cfg.runtime.threaded else pools.ProcessPool
+#        exec_class = futures.ThreadPoolExecutor if cfg.runtime.threaded else futures.ProcessPoolExecutor
         with exec_class() as executor:
             try:
 #                future = executor.submit(prepare_and_test_submission, submission, framework_context, cfg)
@@ -393,7 +393,7 @@ def main():
         time.sleep(2)
 
     cfg.shutdown_framework(framework_context)
-    print("Framework shutdown")
+    logging.info("Framework shutdown")
     # Return to where we started at.
     os.chdir(starting_dir)
 

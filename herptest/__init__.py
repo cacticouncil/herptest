@@ -1,4 +1,5 @@
 import inspect
+import logging
 import os.path
 from types import SimpleNamespace
 from easydict import EasyDict
@@ -32,6 +33,14 @@ class Config(EasyDict):
                                "prep_cmd": None,
                                "compile_cmd": None,
                                "post_cmd": None})
+
+        # Process specially recognized keywords
+        if "threaded" in keywords:
+            if self.runtime.threaded:
+                logging.warning("WARNING: test suite threading config replaced by command line (threaded=True)")
+                keywords.pop("threaded")
+            else:
+                self.runtime.threaded = keywords.pop("threaded")
 
         # Process keywords to make additional assignments.
         for key, value in keywords:

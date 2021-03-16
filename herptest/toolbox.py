@@ -204,7 +204,7 @@ def load_library(directory, name):
 
 def unload_library(library):
     if "FreeLibrary" in dir(_ctypes):
-        _ctypes.FreeLibrary(library)
+        _ctypes.FreeLibrary(library._handle)
     else:
         _ctypes.dlclose(library._handle)
 

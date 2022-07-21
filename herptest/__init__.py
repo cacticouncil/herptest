@@ -2,31 +2,33 @@ import inspect
 import logging
 import os.path
 from types import SimpleNamespace
-from easydict import EasyDict
+from monkeydict import MonkeyDict
+
+
+VERSION = '0.9.9.12'
 
 # Test Suite Configuration
-class Config(EasyDict):
+class Config(MonkeyDict):
     def __init__(self, runtime=None, test_sets=None, **keywords):
         super().__init__()
         self["runtime"] = runtime
         self["sets"] = test_sets
 
         # Log locations
-        self.general = EasyDict({"result_path":  "Results",
+        self.general = MonkeyDict({"result_path":  "Results",
                         "result_file":  "result.csv",
                         "error_log":    "error.log",
                         "summary_file": "summary.csv"})
 
-        # Paths to base files, target source destination, and resources
-        self.build = EasyDict({"base":          None,
+        # Paths to base files and target source destination
+        self.build = MonkeyDict({"base":          None,
                                "destination":   None,
-                               "resources":     None,
 
         # Build parameters: source folder (src), build destination (bin)
-                               "subject_src":   "Source/Subject",
-                               "subject_bin":   "Build/Subject",
-                               "framework_src": "Source/Subject",
-                               "framework_bin": "Build/Subject",
+                               "subject_src":   None,
+                               "subject_bin":   None,
+                               "framework_src": None,
+                               "framework_bin": None,
 
         # Build commands: preparing & compiling (additional keys: $source_dir, $build_dir)
         # Command format: list[] is single command's elements (command and arguments); tuple() is list of commands.
@@ -45,27 +47,6 @@ class Config(EasyDict):
         # Process keywords to make additional assignments.
         for key, value in keywords:
              self[key] = value
-
-#            parent = self
-            # If this is a top-level assignment, it's easy-peasy. :)
-#            if not "." in key:
-#                if not key.isidentifier():
-#                    raise Exception("Tried to use invalid string in easydict")
-#                parent[key] = value
-#                continue
-            # If the key is nested, split off the "final" key from the parent key so we can iterate.
-#            parent_key, final_key = key.rsplit(".", 1)
-#            if not final_key.isidentifier():
-#                raise Exception("Tried to use invalid string in easydict")
-            # For each parent key section, traverse, adding dictionaries as needed.
-#            for section in parent_key.split("."):
-#                if not section.isidentifier():
-#                    raise Exception("Tried to use invalid string in easydict")
-                # If the section doesn't exist, add it. Then traverse into that section.
-#                if not hasattr(parent, section):
-#                    parent.section = EasyDict()
-#                parent = parent[section]
-#            parent[final_key] = value
 
 
     # Make configuration paths absolute

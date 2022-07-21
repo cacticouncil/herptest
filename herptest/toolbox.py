@@ -22,7 +22,7 @@ import importlib.util
 from ctypes import util
 from os import path
 from numbers import Number
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, TimeoutExpired
 
 DEFAULT_MAX_READ = 1024 * 1024
 
@@ -149,10 +149,10 @@ def load_module(filename, package_name=None):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
     except FileNotFoundError as e:
-        print(type(e).__name__ + ": " + str(e))
+        logging.error(type(e).__name__ + ": " + str(e))
         return None
     except Exception as e:
-        print(type(e).__name__ + ": " + str(e))
+        logging.error(type(e).__name__ + ": " + str(e))
         return None
     finally:
         os.chdir(start_dir)
@@ -492,8 +492,9 @@ def get_value_or_error_msg(target_function, params):
     try:
         return target_function(*params)
     except Exception as e:
+        logging.debug(traceback.format_exc())
         try:
-            return str(e)
+            return "%s: %s" % (e.__class__.__name__, str(e))
         except:
             return e.__class__.__name__
 
@@ -526,7 +527,6 @@ def get_vt_output(working_dir, command, proc_input, timeout, tokenize=True, keep
     os.chdir(working_dir)
 
     try:
-
         # Start the process, get the output, and return to the original directory.
         process = pexpect.spawn(command[0], command[1:], timeout=timeout)
 
@@ -538,18 +538,15 @@ def get_vt_output(working_dir, command, proc_input, timeout, tokenize=True, keep
         if sleep:
             time.sleep(timeout)
         process.flush()
-#        if sleep:
-#            time.sleep(timeout)
 
         results = process.read_nonblocking(readsize, timeout=timeout).decode()
         process.terminate(True)
 
-#        results = process.read().decode()
         if not raw:
             results = ansi_to_text(results, lines, columns)
     except Exception as e:
         stack_trace = traceback.format_exc()
-        print("%s: %s\n%s" % (type(e).__name__, e, stack_trace))
+        logging.error("%s: %s\n%s" % (type(e).__name__, e, stack_trace))
 
     finally:
         os.chdir(start_dir)
@@ -581,21 +578,24 @@ def get_cmd_output(working_dir, command, proc_input, timeout, tokenize=True, kee
     # Start the process, send input, and gather output.
     try:
         # First, start the process; then, after the designated delay, send the data.
-        process = Popen(command, stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        process = Popen(command, stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
 
         for delay, entry in proc_input:
             time.sleep(delay)
-            process.stdin.write(entry)
+            process.stdin.write(entry + "\n")
+            process.stdin.flush()
 
         # After all input has been sent, if the process has not quit, wait - and kill if necessary.
         if process.poll() == None:
             try:
                 process.wait(timeout=timeout)
-            except subprocess.TimeoutExpired as e:
+            except TimeoutExpired as e:
                 process.kill()
 
         # Gather the output of the process.
-        results = process.communicate(timeout=timeout)[0].decode()
+        results = process.communicate(timeout=timeout)[0]
+    except Exception as e:
+        print(e)
 
     # Return to the original directory.
     finally:

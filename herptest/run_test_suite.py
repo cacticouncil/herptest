@@ -18,9 +18,8 @@ import dill
 import pathos.pools as pools
 
 from . import toolbox
+from . import VERSION
 from concurrent import futures
-
-VERSION = '0.9.9.6'
 
 
 # handle command line args
@@ -42,18 +41,21 @@ def parse_arguments():
 
 def build_project(source_root, build_root, build_cfg):
     result_error = None
+    error_output = None
     current_dir = os.getcwd()
 
     # If there is a not a specified build directory, fall back to the source directory instead.
     if not build_root:
+        logging.info("No build root; assuming the build root is the source root (" + source_root + ")")
         build_root = source_root
 
     # If the build exists, remove old project folder, recreate it, and switch to it.
-    if os.path.isdir(build_root) and not build_root == source_root:
-        shutil.rmtree(build_root)
-    if not os.path.exists(build_root):
-        os.makedirs(build_root)
-    os.chdir(build_root)
+    if build_root:
+        if os.path.isdir(build_root) and not build_root == source_root:
+            shutil.rmtree(build_root)
+        if not os.path.exists(build_root):
+            os.makedirs(build_root)
+        os.chdir(build_root)
 
     try:
         # Prepare to make substitutions to the prep / build commands if applicable.
@@ -70,7 +72,7 @@ def build_project(source_root, build_root, build_cfg):
                 for entry in source_cmd:
                     template.template = entry
                     prep_cmd.append(template.substitute(**replacements))
-                subprocess.check_output(prep_cmd, stderr=subprocess.STDOUT)
+                subprocess.check_output(prep_cmd, stderr=subprocess.STDOUT, text=True)
 
         if hasattr(build_cfg, 'compile_cmd') and build_cfg.compile_cmd:
             # Apply substitutions from the build configuration to the compile command
@@ -80,7 +82,7 @@ def build_project(source_root, build_root, build_cfg):
                 for entry in build_cfg.compile_cmd:
                     template.template = entry
                     compile_cmd.append(template.substitute(**replacements))
-                subprocess.check_output(compile_cmd, stderr=subprocess.STDOUT)
+                subprocess.check_output(compile_cmd, stderr=subprocess.STDOUT, text=True)
 
         if hasattr(build_cfg, 'post_cmd') and build_cfg.post_cmd:
             # Apply substitutions from the build configuration to the prep command(s)
@@ -90,13 +92,17 @@ def build_project(source_root, build_root, build_cfg):
                 for entry in source_cmd:
                     template.template = entry
                     post_cmd.append(template.substitute(**replacements))
-                subprocess.check_output(post_cmd, stderr=subprocess.STDOUT)
+                subprocess.check_output(post_cmd, stderr=subprocess.STDOUT, text=True)
 
-    except (subprocess.CalledProcessError, FileNotFoundError) as error:
+    except subprocess.CalledProcessError as error:
+        result_error = error
+        error_output = error.output
+
+    except FileNotFoundError as error:
         result_error = error
 
     os.chdir(current_dir)
-    return result_error
+    return result_error, error_output
 
 
 def run_suite_tests(subject, framework, cfg):
@@ -214,9 +220,11 @@ def prepare_and_init_framework(cfg):
     if cfg.build.framework_src and cfg.build.framework_bin:
         if cfg.build.prep_cmd or cfg.build.compile_cmd:
             logging.info("Prepping / building framework environment... ")
-            result_error = build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.build)
+            result_error, error_output = build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.build)
             if result_error:
-                logging.info("%s: %s\n" % (type(result_error).__name__, result_error))
+                error_text = "%s: %s\n" % (type(result_error).__name__, result_error)
+                logging.error(error_output if error_output else error_text)
+                logging.info(error_text)
                 return
 
         logging.info("initializing framework... ")
@@ -249,10 +257,13 @@ def prepare_and_test_submission(submission, framework_context, cfg):
     # Build the project.
     setup_exceptions = []
     logging.info("Prepping / building project(s) for " + submission + "... ")
-    error = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.build)
+    error, output = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.build)
+
     if error:
         logging.info("error building (see logs)... ")
-        setup_exceptions.append("While prepping/building %s - %s: %s" % (submission, type(error).__name__, error))
+        error_text = "While prepping/building, %s: %s\n" % (type(error).__name__, error)
+        error_text += output if output else ""
+        setup_exceptions.append(error_text)
 
     logging.info("Initializing... ")
     subject_context = None
@@ -271,7 +282,7 @@ def prepare_and_test_submission(submission, framework_context, cfg):
     results, exception_sets = run_suite_tests(subject_context, framework_context, cfg)
     cfg.shutdown_subject(subject_context)
     os.chdir(starting_dir)
-    if len(setup_exceptions) < 0:
+    if len(setup_exceptions) > 0:
         exception_sets["Setup"] = setup_exceptions
 
     return results, exception_sets

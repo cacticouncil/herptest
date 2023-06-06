@@ -33,7 +33,7 @@ def parse_arguments():
     parser.add_argument('-q', '--quiet', dest='INFO', action='store_false', help='execute in quiet mode (console)')
     parser.add_argument('-w', '--warn', dest='WARN', action='store_true', help='display warning information (console)')
     parser.add_argument('-d', '--debug', dest='DEBUG', action='store_true', help='capture debug information (logfile)')
-    parser.add_argument('-s', '--set', dest='set', default="*", help = 'test only projects designated (e.g., *_LATE*')
+    parser.add_argument('-s', '--set', dest='set', default="*", help = 'test only projects designated (e.g., *_LATE*)')
     config = parser.parse_args(sys.argv[1:])
     config.logformat = "%(message)s"
     return config
@@ -44,10 +44,13 @@ def build_project(source_root, build_root, build_cfg):
     error_output = None
     current_dir = os.getcwd()
 
-    # If there is a not a specified build directory, fall back to the source directory instead.
+    # If there is a not a specified build directory, fall back to the source directory instead (if possible).
     if not build_root:
-        logging.info("No build root; assuming the build root is the source root (" + source_root + ")")
         build_root = source_root
+        if source_root:
+            logging.info("assuming combo build-and-source path...")
+        else:
+            logging.info("assuming directory-independent build steps...")
 
     # If the build exists, remove old project folder, recreate it, and switch to it.
     if build_root:
@@ -60,8 +63,8 @@ def build_project(source_root, build_root, build_cfg):
     try:
         # Prepare to make substitutions to the prep / build commands if applicable.
         replacements = {key : value for key, value in build_cfg.__dict__.items() if not key in ['prep_cmd', 'compile_cmd', 'post_cmd']}
-        replacements["source_dir"] = source_root
-        replacements["build_dir"] = build_root
+        replacements["source_dir"] = (source_root if source_root else "[NONE]")
+        replacements["build_dir"] = (build_root if build_root else "[NONE]")
         template = string.Template("")
 
         if hasattr(build_cfg, 'prep_cmd') and build_cfg.prep_cmd:
@@ -217,21 +220,18 @@ def run_test_set(test_set, subject, framework, cfg):
 
 # Build the environment components (only need to do this once.)
 def prepare_and_init_framework(cfg):
-    if cfg.build.framework_src and cfg.build.framework_bin:
-        if cfg.build.prep_cmd or cfg.build.compile_cmd:
-            logging.info("Prepping / building framework environment... ")
-            result_error, error_output = build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.build)
-            if result_error:
-                error_text = "%s: %s\n" % (type(result_error).__name__, result_error)
-                logging.error(error_output if error_output else error_text)
-                logging.info(error_text)
-                return
+    if cfg.build.prep_cmd or cfg.build.compile_cmd or cfg.build.post_cmd:
+        logging.info("Prepping / building framework environment... ")
+        result_error, error_output = build_project(cfg.build.framework_src, cfg.build.framework_bin, cfg.build)
+        if result_error:
+            error_text = "%s: %s\n" % (type(result_error).__name__, result_error)
+            logging.error(error_output if error_output else error_text)
+            logging.info(error_text)
+            return
 
-        logging.info("initializing framework... ")
-        framework_data = cfg.initialize_framework()
-        logging.info("done.\n")
-    else:
-        framework_data = None
+    logging.info("Initializing framework... ")
+    framework_data = cfg.initialize_framework()
+    logging.info("done.\n")
     return framework_data
 
 # For each submission, copy the base files, then the submission, into the destination folder.
@@ -257,13 +257,14 @@ def prepare_and_test_submission(submission, framework_context, cfg):
     # Build the project.
     setup_exceptions = []
     logging.info("Prepping / building project(s) for " + submission + "... ")
-    error, output = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.build)
+    if cfg.build.prep_cmd or cfg.build.compile_cmd or cfg.build.post_cmd:
+        error, output = build_project(cfg.build.subject_src, cfg.build.subject_bin, cfg.build)
 
-    if error:
-        logging.info("error building (see logs)... ")
-        error_text = "While prepping/building, %s: %s\n" % (type(error).__name__, error)
-        error_text += output if output else ""
-        setup_exceptions.append(error_text)
+        if error:
+            logging.info("error building (see logs)... ")
+            error_text = "While prepping/building, %s: %s\n" % (type(error).__name__, error)
+            error_text += output if output else ""
+            setup_exceptions.append(error_text)
 
     logging.info("Initializing... ")
     subject_context = None
@@ -360,11 +361,8 @@ def main():
         root_logger.addHandler(file_logger)
 
         exec_class = pools.ThreadPool if cfg.runtime.threaded else pools.ProcessPool
-#        exec_class = futures.ThreadPoolExecutor if cfg.runtime.threaded else futures.ProcessPoolExecutor
         with exec_class() as executor:
             try:
-#                future = executor.submit(prepare_and_test_submission, submission, framework_context, cfg)
-#                suite_results, exception_sets = future.result()
                 future = executor.apipe(prepare_and_test_submission, submission, framework_context, cfg)
                 suite_results, exception_sets = future.get()
                 # If there were exceptions in the tests, we should log them.

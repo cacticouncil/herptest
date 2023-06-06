@@ -5,7 +5,12 @@ from types import SimpleNamespace
 from monkeydict import MonkeyDict
 
 
-VERSION = '0.9.9.12'
+VERSION = '0.9.9.15'
+
+# TODO: Make this prettier
+def attr_has_value(base, attr_name):
+    return True if hasattr(base, attr_name) and getattr(base, attr_name) else False
+
 
 # Test Suite Configuration
 class Config(MonkeyDict):
@@ -49,18 +54,20 @@ class Config(MonkeyDict):
              self[key] = value
 
 
+
+
     # Make configuration paths absolute
     def make_paths_absolute(self):
-        self.general.result_path = os.path.abspath(self.general.result_path) if self.general.result_path else None
+        self.general.result_path = os.path.abspath(self.general.result_path) if attr_has_value(self.general, "result_path") else None
 
-        self.build.base = os.path.abspath(self.build.base) if self.build.base else None
-        self.build.destination = os.path.abspath(self.build.destination) if self.build.destination else None
-        self.build.resources = os.path.abspath(self.build.resources) if self.build.resources else None
+        self.build.base = os.path.abspath(self.build.base) if attr_has_value(self.build, "base") else None
+        self.build.destination = os.path.abspath(self.build.destination) if attr_has_value(self.build, "destination") else None
+        self.build.resources = os.path.abspath(self.build.resources) if attr_has_value(self.build, "resources") else None
 
-        self.build.subject_src = os.path.abspath(self.build.subject_src) if self.build.subject_src else None
-        self.build.subject_bin = os.path.abspath(self.build.subject_bin) if self.build.subject_bin else None
-        self.build.framework_src = os.path.abspath(self.build.framework_src) if self.build.framework_src else None
-        self.build.framework_bin = os.path.abspath(self.build.framework_bin) if self.build.framework_bin else None
+        self.build.subject_src = os.path.abspath(self.build.subject_src) if attr_has_value(self.build, "subject_src") else None
+        self.build.subject_bin = os.path.abspath(self.build.subject_bin) if attr_has_value(self.build, "subject_bin") else None
+        self.build.framework_src = os.path.abspath(self.build.framework_src) if attr_has_value(self.build, "framework_src") else None
+        self.build.framework_bin = os.path.abspath(self.build.framework_bin) if attr_has_value(self.build, "framework_bin") else None
 
 
     ######################################################

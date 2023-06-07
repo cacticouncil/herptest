@@ -53,17 +53,103 @@ optional arguments:
   -q, --quiet    execute in quiet mode (default: False)
   -d, --debug    display debug information (default: False)
 
-(currently limited to library loading / execution)
-
-
 Upon startup, the herp utility will optionally initialize the framework specified in the settings. This framework is
 only built and initialized once for all students; any items that must be rebuilt for each student should be handled on
 an per-subject (student) basis. The herp utility provides a mechanism to initialize and clean up at the framework,
 subject, and project level (where there is one framework used to test many subjects, and each subject has one or more
 projects that are tested individually.)
 
-The test suite is identified by a "config.py" file that is loaded as a module. The config file must provide the
-following interface to the testing system:
+The test suite is identified by a "config.py" file that is loaded as a module. The config file must provide, at a
+minimum, the following function:
+
+  def get_suite_config(runtime: argparse.Namspace) -> herptest.Config
+
+The Config class is defined as follows:
+
+  __init__(self, runtime=None: argparse.Namespace, test_sets=None: tuple(herptest.TestSet, ...), **keywords)
+    Named Arguments
+    ---------------
+    runtime:   arguments passed at runtime
+    test_sets: tuple of TestSet objects defining the set of tests for subsections of the target
+    
+    Keyword Arguments
+    -----------------    
+    keywords:  key-value pairs to be added to the object (for custom data elements)
+
+Optional methods in Config (may be overloaded):
+
+  initialize_framework(self) -> framework_context
+  Called after building the framework. It should return any framework_context that is important to properly shutdown /
+  cleanup the framework. By default, returns "None".
+
+  shutdown_framework(self, framework_context)
+  Clean up / shutdown the framework. This method will be called when all testing is done. The context passed in is
+  identical to that returned by the initialize_framework method.
+
+  initialize_subject(self, subject_bin, framework_context) -> subject_context
+  Called after subject project(s) are built but before testing. In addition to the framework context, it is passed the
+  subject output (binary) directory. It should return any subject_context important to properly shutdown / cleanup once
+  all of the subject's project tests have been completed. By default, returns the subject_bin parameter.
+
+  shutdown_subject(self, subject_context)
+  Clean up / shutdown the testing subject. This method will be called when all testing is done for this subject. The
+  subject_context passed in is identical to that returned by the initialize_subject method.
+
+  initialize_test_set(self, test_set, subject_context, framework_context) -> test_set_context
+  Called by test suite to prepare a set of tests to be run on this subject. In addition to other contexts, the current
+  TestSet object (test_set) is passed to the call. It should return any test_set_context that is important to properly
+  shutdown / cleanup the test set after testing is completed. By default, returns the test_set parameter.
+
+  shutdown_test_set(self, test_set_context)
+  Clean up / shutdown the test set for the current subject. This method will be called when all testing is done for this
+  subject. The project_context passed in is identical to that returned by the initializeProject method.
+
+
+The TestSet class is defined as follows:
+
+(self, name, id, num_tests, test_function, **keywords):
+
+  Called after building the framework. It should return any framework_context that is important to properly shutdown /--
+  __init__(self, name: str, id: str, num_tests: int | Callable, test_function: Callable, **keywords)
+    Required Arguments
+    ------------------
+    name:          plain-language name for the test set for visual display
+    id:            shorthand string for test set (ASCII only, alpha-numerics and/or underscores - e.g., [A-Ba-b0-9_]*)
+    num_tests:     the number of tests as an integer or a callable that returns the number of tests as an integer.
+    test_function: a callable that returns a value of 0-1 to score the subject on the given test.
+    
+    The test_function parameter should act as a function with the following signature:
+      test_function(test_num, test_set_context, subject_context, framework_context, config) -> float, ValueRange(0, 1)
+
+    Keyword Arguments
+    -----------------
+    max_score:   Maximum score for this test set. Defaults to 100.0
+    max_penalty: Maximum penalty that can be applied to the project. Defaults to 0.0
+    test_desc:   Callable: test_desc(teset_num, *args, **keywords) -> description: str. Defaults to "Test #{test_num}"
+
+Optional methods in Config (may be overloaded):
+
+
+
+====Testing Functions====
+getNumberOfTests(project_context)
+Returns the number of data test cases available for the project identified by project_context.
+
+getTestDescription(test_number, project_context)
+Returns a string describing the test identified by test_number and project_context.
+
+runCaseTest(test_number, project_context)
+Runs the test identified by test_number and project_context, returning a score.
+
+runCasePenalty(penalty_number, test_number, project_context)
+Runs the test identified by test_number and project_context, capturing the penalty identified by penalty_number.
+
+runProjectPenalty(penalty_number, project_context)
+Runs the penalty test identified by penalty_number and project_context, returning its value.
+
+
+
+The TestSet class is defined as follows:
 
 --"project" submodule object (config.project)
 --"build" namespace object (config.build)
@@ -102,49 +188,6 @@ The display name is used in output about project testing, while the internal nam
 function outlined below. The point value identifies how the project should be scored.
 
 ===Functions===
-
-====Initialization / Shutdown of Test Suite====
-initializeFramework(framework_bin)
-This function is called after building the framework. It is passed the framework output (binary) directory. It should
-return any framework_context that is important to properly shutdown / cleanup the framework.
-
-shutdownFramework(framework_context)
-This function will be called when all testing is done in order to shutdown / clean up the framework. The context passed
-in is identical to that returned by the initializeFramework function.
-
-initializeSubject(subject_bin)
-This function is called after the subject project(s) are built but before they are tested. It is passed the subject
-output (binary) directory. It should return any subject_context that is important to properly shutdown / cleanup once
-all of the subject's project tests have been completed.
-
-shutdownSubject(subject_context)
-This function will be called when all testing is done for this subject. The subject_context passed in is identical to
-that returned by the initializeSubject function.
-
-initializeProject(identifier, framework_context, subject_context, config.project)
-This function is called by the test suite to prepare a project to be tested. It includes the project's internal string
-identifier as well as the framwork / subject contexts (returned by the initializers) and the project settings. Is
-should return any project_context that is important to properly shutdown / cleanup the project after testing is done.
-
-shutdownProject(project_context)
-This function will be called when all testing is done for this project. The project_context passed in is identical to
-that returned by the initializeProject function.
-
-====Testing Functions====
-getNumberOfTests(project_context)
-Returns the number of data test cases available for the project identified by project_context.
-
-getTestDescription(test_number, project_context)
-Returns a string describing the test identified by test_number and project_context.
-
-runCaseTest(test_number, project_context)
-Runs the test identified by test_number and project_context, returning a score.
-
-runCasePenalty(penalty_number, test_number, project_context)
-Runs the test identified by test_number and project_context, capturing the penalty identified by penalty_number.
-
-runProjectPenalty(penalty_number, project_context)
-Runs the penalty test identified by penalty_number and project_context, returning its value.
 
 ==build namespace==
 The build namespace objects holds paths and build commands. It must provide the following interface:

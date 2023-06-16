@@ -1,5 +1,6 @@
 *.pyc
 dist/
+MANIFEST
 build/
 herptest.egg-info/
 pengtest.egg-info/

@@ -8,12 +8,12 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 
 setup(
-    name='pengtest',
+    name='herptest',
     version='0.9.9.5',
-    packages=['pengtest',],
-    url='https://github.com/tmaiello/herptest',
+    packages=['herptest',],
+    url='https://github.com/RobertKilkenny/herptest_UFSA23',
     license='GPL 3',
-    author='Emma Andrews, Gerard Avecilla, Matthew Baumaister, Tyler Maiello, Matt McDermott',
+    author='Renee Kaynor, Lunafreya Trung Nguyen, Surpris Mezardieu, Robert Kilkenny',
     author_email='jjb@eng.ufl.edu',
     description='Test suite tools for instructors',
     install_requires=[
@@ -31,19 +31,19 @@ setup(
         'canvasapi',
         'mosspy'
     ],
-    package_data={'pengtest': ['pengtest/*.png', 'test_suite_templates/*.py']},
+    package_data={'herptest': ['herptest/*.png', 'test_suite_templates/*.py']},
 
     include_package_data=True,
 
     entry_points =
     { 'console_scripts':
         [
-            'elma = pengtest.extract_lms_archive:main',
-            'peng = pengtest.run_test_suite:main',
-            'peng-gui = pengtest.gui:main',
-            'csv-upload = pengtest.grade_csv_uploader:main',
-            'peng-canvas = pengtest.canvas:main',
-            'moss = pengtest.run_moss:main'
+            'elma = herptest.extract_lms_archive:main',
+            'herp = herptest.run_test_suite:main',
+            'gui = herptest.gui:main',
+            'csv-upload = herptest.grade_csv_uploader:main',
+            'herp-canvas = herptest.canvas:main',
+            'moss = herptest.run_moss:main'
         ]
     }
 )

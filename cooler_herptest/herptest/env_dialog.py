@@ -1,6 +1,6 @@
 from PySide2 import QtCore, QtWidgets, QtGui
 import os
-from . import env_wrapper
+import env_wrapper
 
 
 class EnvDialog:

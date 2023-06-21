@@ -1,7 +1,7 @@
 from PySide2 import QtCore, QtWidgets, QtGui
 import os, subprocess
 import numpy as np
-from . import grade_csv_uploader, canvas, env_dialog
+import grade_csv_uploader, canvas, env_dialog
 
 class AbstractCanvasInterface(QtWidgets.QWidget):
     #A generic interface for canvas assignments/ courses without any controls

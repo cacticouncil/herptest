@@ -235,9 +235,12 @@ class ResultsPage(QtWidgets.QWidget):
         studentFilePath = resultsDirectory + f"/{studentDirName}/result.csv"
         with open(studentFilePath, newline='') as resultsFile:
             fileReader = csv.reader(resultsFile, delimiter=',')
-            rowsToSkip = 4
+            rowsToSkip = 5
             numTestCases = -1
+            data.append(["", "", "", ""])
             for row in fileReader:
+                if rowsToSkip == 3:
+                    data.append(["Test-Set: " + row[0].rsplit(" ", 1)[1], "", "", ""])
                 if rowsToSkip == 2:
                     #this row contains the number of tests, use this to separate the stats
                     numTestCases = int(row[0].rsplit(":", 1)[1][:-1])
@@ -248,9 +251,13 @@ class ResultsPage(QtWidgets.QWidget):
                 if numTestCases < 0:
                     #no more test cases, read the footer information
                     if len(row) > 0:
-                        text = row[0].rsplit(":", 1)[0]
-                        num = row[0].rsplit(":", 1)[1]
-                        data.append([text, num, "", ""])
+                        if "Test-Set" in row[0]:
+                            data.append(["Test-Set: " + row[0].rsplit(" ", 1)[1], "", "", ""])
+                            rowsToSkip = 2
+                        else:
+                            text = row[0].rsplit(":", 1)[0]
+                            num = row[0].rsplit(":", 1)[1]
+                            data.append([text, num, "", ""])
                     else:
                         data.append(["", "", "", ""])
                 else:

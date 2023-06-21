@@ -15,7 +15,7 @@ def initWindow():
     tabContainer =  QtWidgets.QTabWidget()
 
     #create all the tabs for the gui, save a reference to them, and add them to the tab creator
-    tabContainer.addTab(homePage.HomePage(), "Run PengTest")
+    tabContainer.addTab(homePage.HomePage(), "Run HerpTest")
     homePageInst = tabContainer.widget(0)
     tabContainer.addTab(testSuiteCreator.TestSuiteCreator(), "Create Test Suite")
     testSuiteCreatorInst = tabContainer.widget(1)
@@ -40,16 +40,16 @@ def initWindow():
         tabContainer.addTab(QtWidgets.QLabel("    " + t + " - Coming soon!"), t)
 
     window.setCentralWidget(tabContainer)
-    window.setWindowTitle("PengTest")    
+    window.setWindowTitle("HerpTest")
     window.resize(800, 800)
     
     createStatusBar(window)
     return window
 
 def createSplash():
-    loadingTips = ["Water is wet", "Slack > Teams", "Nuke Duo from Orbit", "Peng loves you!", "Help, I've been turned into a penguin!", "Defeat the enemies by reducing their health to zero"]
+    loadingTips = ["Loading..."]
 
-    splashLoc = str(pathlib.Path(__file__).parent.absolute()) + "/pengSplash.png"
+    splashLoc = str(pathlib.Path(__file__).parent.absolute()) + "/herpSplash.png"
     splash = QtWidgets.QSplashScreen(pixmap = QtGui.QPixmap(splashLoc))
     splash.showMessage('<h2> Tip: ' + random.choice(loadingTips) + "</h2>", QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom, QtGui.QColor(20,20,20))
     return splash
@@ -57,7 +57,7 @@ def createSplash():
 def createStatusBar(window):
     #creates the global status bar at the bottom of the ui
     status = QtWidgets.QStatusBar()
-    statusMessage = QtWidgets.QLabel("PengTest - GUI (peng-gui): Version 0.9.9.5")
+    statusMessage = QtWidgets.QLabel("HerpTest - GUI (herp-gui)")
     status.addWidget(statusMessage)
     status.setStyleSheet("background-color: #83d3f7")
     window.setStatusBar(status)
@@ -77,7 +77,7 @@ def main():
         window = initWindow()
         end = time.time()
         if (end-start) < 2:
-            time.sleep(2-(end-start))#give the user a change to see peng if they have a monstrously fast computer
+            time.sleep(2-(end-start))#give the user a change to see screen if they have a monstrously fast computer
         window.show()
         splash.finish(window)
 

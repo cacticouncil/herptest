@@ -1,5 +1,6 @@
 *.pyc
 dist/
+MANIFEST
 build/
 herptest.egg-info/
 pengtest.egg-info/
@@ -17,7 +18,3 @@ libclang/
 venv/
 test_suite/
 Instructors/
-Ex1-Test Suite
-Ex1-Test Suite.zip
-Ex2-Test Suite
-Ex2-Test Suite.zip

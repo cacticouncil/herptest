@@ -1,7 +1,7 @@
 import sys, os
 import time, random, pathlib
 from PySide2 import QtCore, QtWidgets, QtGui
-import homePage, testSuiteCreator, resultsPage, canvasUploadPage, autopullElmaPage, vmPage
+import homePage, testSuiteCreator, resultsPage, canvasUploadPage, autopullElmaPage, vmPage, canvas_interface
 
 
 

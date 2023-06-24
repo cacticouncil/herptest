@@ -63,16 +63,18 @@ class Student:
 
 
 class CanvasUtil:
-    def __init__(self, canvas_url, dotenv_path, token_type):
+    def __init__(self, canvas_url, dotenv_path, token_type, userType):
         self.canvas_api_url = canvas_url
         load_dotenv(dotenv_path)  # load token from .env file
         self.token = os.getenv(token_type)
+        self.userType = userType
 
     def get_courses_this_semester(self) -> dict:
         """
         Get dictionary (name -> id) of courses in this semester
         """
-        response = requests.get(f"{self.canvas_api_url}/courses?enrollment_type=teacher&include=items&per_page=1000", auth=BearerAuth(self.token))
+
+        response = requests.get(f"{self.canvas_api_url}/courses?enrollment_type=" + self.userType + "&include=items&per_page=1000", auth=BearerAuth(self.token))
         content = response.json()
         # try:
         #     enrollment_term_id = content[0]["enrollment_term_id"]

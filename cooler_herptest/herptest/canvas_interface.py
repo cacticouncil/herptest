@@ -1,6 +1,7 @@
 from PySide2 import QtCore, QtWidgets, QtGui
 import os, subprocess
 import numpy as np
+import pyautogui
 import grade_csv_uploader, canvas, env_dialog
 
 class AbstractCanvasInterface(QtWidgets.QWidget):
@@ -106,10 +107,13 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         self.canvasBasePath = "https://ufl.instructure.com"
         self.dotEnvPath = "canvas.env"
         self.tokenType = "TOKEN"
+        self.established = False
         try:
-            self.canvasUtil = grade_csv_uploader.CanvasUtil(self.canvasPath, self.dotEnvPath, self.tokenType)
+            userType = pyautogui.confirm('View as a TA or a Teacher?', 'Select TA or Teacher', ['TA', 'Teacher']).lower()
 
-            self.canvasWrapper = canvas.CanvasWrapper(self.canvasBasePath, self.dotEnvPath)
+            self.canvasUtil = grade_csv_uploader.CanvasUtil(self.canvasPath, self.dotEnvPath, self.tokenType, userType)
+
+            self.canvasWrapper = canvas.CanvasWrapper(self.canvasBasePath, self.dotEnvPath, userType)
         except:
             print("Something went wrong, either the canvas.env does not exist or it does not contain a token with the type TOKEN")
             self.canvasEnvMissing = True

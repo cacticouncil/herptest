@@ -8,14 +8,15 @@ import argparse
 from pengtest.env_wrapper import EnvWrapper
 
 class CanvasWrapper:
-    def __init__(self, API_URL, env_path, userType, token_type="TOKEN"): #Initializes CanvasWrapper object which stores an authenticated CanvasAPI Canvas object
+    def __init__(self, API_URL, env_path, user_type, token_type="TOKEN"): #Initializes CanvasWrapper object which stores an authenticated CanvasAPI Canvas object
         self.canv_url = API_URL
         load_dotenv(env_path)
         self.canv_token = os.getenv(token_type)
         self.canv = Canvas(API_URL, self.canv_token)
+        self.userType = user_type
 
     def get_courses(self): #Get all courses with enrollment type of whatever is passed in
-        return self.canv.get_courses(enrollment_type=userType)
+        return self.canv.get_courses(enrollment_type=self.userType)
     
     def get_assignments(self, course): #Get all assignments in a course using the passed in course ID
         return self.canv.get_course(course).get_assignments()
@@ -84,7 +85,7 @@ def env_setup():
 def parse_arguments():
     parser = argparse.ArgumentParser(description='A program to automatically push grades or pull submissions to a Canvas assignment')
     parser.add_help = True
-    parser.add_argument('-S', '-s', '--setupenv', action='store_true', help='Run the setup wizard for Canvas API Key Environment Variables')
+    parser.add_argument('-E', '-e', '--setupenv', action='store_true', help='Run the setup wizard for Canvas API Key Environment Variables')
     config = parser.parse_args(sys.argv[1:])
     config.logformat = "%(message)s"
     return config
@@ -100,30 +101,37 @@ def main():
     arg_config = parse_arguments()
     if arg_config.setupenv == True:
         env_setup()
-    
-    canvas_type = input("Would you like to upload to Live Canvas or Canvas Beta? {Choices: Live, Beta} ")
-    if canvas_type == "Live" or canvas_type == "live":
-        canvas = CanvasWrapper(PRODUCTION_URL,DOT_ENV_PATH,PRODUCTION_TOKEN_TYPE)
-        print("Starting CSV Uploader With Parameters -> API_URL:",PRODUCTION_URL,"-> DOT_ENV: ",DOT_ENV_PATH,"-> TOKEN_TYPE:",PRODUCTION_TOKEN_TYPE)
-    elif canvas_type == "Beta" or canvas_type == "beta":
-        canvas = CanvasWrapper(BETA_URL,DOT_ENV_PATH,BETA_TOKEN_TYPE)
-        print("Starting CSV Uploader With Parameters -> API_URL:",BETA_URL,"-> DOT_ENV:",DOT_ENV_PATH,"-> TOKEN_TYPE:",BETA_TOKEN_TYPE)
-    else:
+
+    user_type = input("Are you using Canvas as a Teacher or a TA? {Choices: teacher, ta} ")
+    if user_type != "teacher" and user_type != "ta":
         print("| InputError: Your input does not match one of the chosen types.")
         print("└─> exiting with error")
         exit(-1)
+    else:
+        canvas_type = input("Would you like to upload to Live Canvas or Canvas Beta? {Choices: Live, Beta} ")
+        if canvas_type == "Live" or canvas_type == "live":
+            canvas = CanvasWrapper(PRODUCTION_URL,DOT_ENV_PATH,user_type,PRODUCTION_TOKEN_TYPE)
+            print("Starting CSV Uploader With Parameters -> API_URL:",PRODUCTION_URL,"-> DOT_ENV: ",DOT_ENV_PATH,"-> TOKEN_TYPE:",PRODUCTION_TOKEN_TYPE)
+        elif canvas_type == "Beta" or canvas_type == "beta":
+            canvas = CanvasWrapper(BETA_URL,DOT_ENV_PATH,user_type,BETA_TOKEN_TYPE)
+            print("Starting CSV Uploader With Parameters -> API_URL:",BETA_URL,"-> DOT_ENV:",DOT_ENV_PATH,"-> TOKEN_TYPE:",BETA_TOKEN_TYPE)
+        else:
+            print("| InputError: Your input does not match one of the chosen types.")
+            print("└─> exiting with error")
+            exit(-1)
 
     # CanvasWrapper object, driver object for functionality, if you want beta or production, a different .env path, or token, enter here into constructor.
 
     try:
         courses = canvas.get_courses()
+        print(courses[0])
     except:
-        print("| Canvas Util Object failed to be created. Is your API key valid?")
+        print(f"| Canvas Util Object failed to be created. Either your API key is invalid or you have no courses as a {user_type}.")
         print("| Hint: try using --setupenv to set up your environment variables.")
         print("└─> exiting with error")
         exit(-1)
 
-    print("-=- Listing all courses for which you have role: Teacher -=-")
+    print(f"-=- Listing all courses for which you have role: {user_type} -=-")
     temp_count = 0
     for course in courses:
         print(f"{temp_count}. {course.name}")

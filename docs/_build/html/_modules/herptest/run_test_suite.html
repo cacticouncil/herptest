@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>herptest.run_test_suite &mdash; herptest_sphinx 0.9.9.16 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            herptest_sphinx
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">herptest_sphinx</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../herptest.html">herptest</a></li>
+      <li class="breadcrumb-item active">herptest.run_test_suite</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for herptest.run_test_suite</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is the driver source code for the `herp` utility to run the project test suite as specified by the user.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="c1"># Copyright (c) 2017 Cacti Council Inc., 2018-2020 University of Florida</span>
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">os.path</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">import</span> <span class="nn">numbers</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">dill</span>
+<span class="kn">import</span> <span class="nn">pathos.pools</span> <span class="k">as</span> <span class="nn">pools</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">toolbox</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">VERSION</span>
+<span class="kn">from</span> <span class="nn">concurrent</span> <span class="kn">import</span> <span class="n">futures</span>
+
+
+<span class="c1"># handle command line args</span>
+<div class="viewcode-block" id="parse_arguments"><a class="viewcode-back" href="../../herptest.html#herptest.run_test_suite.parse_arguments">[docs]</a><span class="k">def</span> <span class="nf">parse_arguments</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handles command line arguments and creates usage message</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    config: argparse.Namespace</span>
+<span class="sd">        Namespace object that holds the argument context.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;A program to run a set of tests for a programming assignment.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_help</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;suite_path&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;?&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;./&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;path of test suite to load&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;target_path&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;?&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;Projects&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;path of target projects (by subdirectory)&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-V&#39;</span><span class="p">,</span> <span class="s1">&#39;--version&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;version&#39;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(prog)s</span><span class="s1"> &#39;</span> <span class="o">+</span> <span class="n">VERSION</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-t&#39;</span><span class="p">,</span> <span class="s1">&#39;--threaded&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;threaded&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;use threads instead of processes&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-q&#39;</span><span class="p">,</span> <span class="s1">&#39;--quiet&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;INFO&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_false&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;execute in quiet mode (console)&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-w&#39;</span><span class="p">,</span> <span class="s1">&#39;--warn&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;WARN&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;display warning information (console)&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="s1">&#39;--debug&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;capture debug information (logfile)&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-s&#39;</span><span class="p">,</span> <span class="s1">&#39;--set&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;set&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">help</span> <span class="o">=</span> <span class="s1">&#39;test only projects designated (e.g., *_LATE*)&#39;</span><span class="p">)</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">logformat</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%(message)s</span><span class="s2">&quot;</span>
+    <span class="k">return</span> <span class="n">config</span></div>
+
+
+<div class="viewcode-block" id="build_project"><a class="viewcode-back" href="../../herptest.html#herptest.run_test_suite.build_project">[docs]</a><span class="k">def</span> <span class="nf">build_project</span><span class="p">(</span><span class="n">source_root</span><span class="p">,</span> <span class="n">build_root</span><span class="p">,</span> <span class="n">build_cfg</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Builds the project that will be tests</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    source_root: str</span>
+<span class="sd">        The Source directory path</span>
+
+<span class="sd">    build_root: str</span>
+<span class="sd">        The Build directory path</span>
+
+<span class="sd">    build_cfg: str</span>
+<span class="sd">        The Build directory path for the Configuration file</span>
+
+
+<span class="sd">    Return</span>
+<span class="sd">    ------</span>
+
+<span class="sd">    result_error: BaseException</span>
+<span class="sd">        An error flag for any issue raised when building the project</span>
+
+<span class="sd">    error_output: str</span>
+<span class="sd">        An output message that provides further detail of the error</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">result_error</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">error_output</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">current_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+
+    <span class="c1"># If there is a not a specified build directory, fall back to the source directory instead (if possible).</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">build_root</span><span class="p">:</span>
+        <span class="n">build_root</span> <span class="o">=</span> <span class="n">source_root</span>
+        <span class="k">if</span> <span class="n">source_root</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;assuming combo build-and-source path...&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;assuming directory-independent build steps...&quot;</span><span class="p">)</span>
+
+    <span class="c1"># If the build exists, remove old project folder, recreate it, and switch to it.</span>
+    <span class="k">if</span> <span class="n">build_root</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">build_root</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">build_root</span> <span class="o">==</span> <span class="n">source_root</span><span class="p">:</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">build_root</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">build_root</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">build_root</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">build_root</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Prepare to make substitutions to the prep / build commands if applicable.</span>
+        <span class="n">replacements</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span> <span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">build_cfg</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;prep_cmd&#39;</span><span class="p">,</span> <span class="s1">&#39;compile_cmd&#39;</span><span class="p">,</span> <span class="s1">&#39;post_cmd&#39;</span><span class="p">]}</span>
+        <span class="n">replacements</span><span class="p">[</span><span class="s2">&quot;source_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">source_root</span> <span class="k">if</span> <span class="n">source_root</span> <span class="k">else</span> <span class="s2">&quot;[NONE]&quot;</span><span class="p">)</span>
+        <span class="n">replacements</span><span class="p">[</span><span class="s2">&quot;build_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">build_root</span> <span class="k">if</span> <span class="n">build_root</span> <span class="k">else</span> <span class="s2">&quot;[NONE]&quot;</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">build_cfg</span><span class="p">,</span> <span class="s1">&#39;prep_cmd&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">build_cfg</span><span class="o">.</span><span class="n">prep_cmd</span><span class="p">:</span>
+            <span class="c1"># Apply substitutions from the build configuration to the prep command(s)</span>
+            <span class="n">source_cmds</span> <span class="o">=</span> <span class="n">build_cfg</span><span class="o">.</span><span class="n">prep_cmd</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">build_cfg</span><span class="o">.</span><span class="n">prep_cmd</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span><span class="n">build_cfg</span><span class="o">.</span><span class="n">prep_cmd</span><span class="p">,)</span>
+            <span class="k">for</span> <span class="n">source_cmd</span> <span class="ow">in</span> <span class="n">source_cmds</span><span class="p">:</span>
+                <span class="n">prep_cmd</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">source_cmd</span><span class="p">:</span>
+                    <span class="n">template</span><span class="o">.</span><span class="n">template</span> <span class="o">=</span> <span class="n">entry</span>
+                    <span class="n">prep_cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">template</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="o">**</span><span class="n">replacements</span><span class="p">))</span>
+                <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">prep_cmd</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">build_cfg</span><span class="p">,</span> <span class="s1">&#39;compile_cmd&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">build_cfg</span><span class="o">.</span><span class="n">compile_cmd</span><span class="p">:</span>
+            <span class="c1"># Apply substitutions from the build configuration to the compile command</span>
+            <span class="n">source_cmds</span> <span class="o">=</span> <span class="n">build_cfg</span><span class="o">.</span><span class="n">compile_cmd</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">build_cfg</span><span class="o">.</span><span class="n">compile_cmd</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span><span class="n">build_cfg</span><span class="o">.</span><span class="n">compile_cmd</span><span class="p">,)</span>
+            <span class="k">for</span> <span class="n">source_cmd</span> <span class="ow">in</span> <span class="n">source_cmds</span><span class="p">:</span>
+                <span class="n">compile_cmd</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">build_cfg</span><span class="o">.</span><span class="n">compile_cmd</span><span class="p">:</span>
+                    <span class="n">template</span><span class="o">.</span><span class="n">template</span> <span class="o">=</span> <span class="n">entry</span>
+                    <span class="n">compile_cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">template</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="o">**</span><span class="n">replacements</span><span class="p">))</span>
+                <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">compile_cmd</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">build_cfg</span><span class="p">,</span> <span class="s1">&#39;post_cmd&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">build_cfg</span><span class="o">.</span><span class="n">post_cmd</span><span class="p">:</span>
+            <span class="c1"># Apply substitutions from the build configuration to the prep command(s)</span>
+            <span class="n">source_cmds</span> <span class="o">=</span> <span class="n">build_cfg</span><span class="o">.</span><span class="n">post_cmd</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">build_cfg</span><span class="o">.</span><span class="n">post_cmd</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span><span class="n">build_cfg</span><span class="o">.</span><span class="n">post_cmd</span><span class="p">,)</span>
+            <span class="k">for</span> <span class="n">source_cmd</span> <span class="ow">in</span> <span class="n">source_cmds</span><span class="p">:</span>
+                <span class="n">post_cmd</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">source_cmd</span><span class="p">:</span>
+                    <span class="n">template</span><span class="o">.</span><span class="n">template</span> <span class="o">=</span> <span class="n">entry</span>
+                    <span class="n">post_cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">template</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="o">**</span><span class="n">replacements</span><span class="p">))</span>
+                <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">post_cmd</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="n">result_error</span> <span class="o">=</span> <span class="n">error</span>
+        <span class="n">error_output</span> <span class="o">=</span> <span class="n">error</span><span class="o">.</span><span class="n">output</span>
+
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="n">result_error</span> <span class="o">=</span> <span class="n">error</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">current_dir</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result_error</span><span class="p">,</span> <span class="n">error_output</span></div>
+
+
+<div class="viewcode-block" id="run_suite_tests"><a class="viewcode-back" href="../../herptest.html#herptest.run_test_suite.run_suite_tests">[docs]</a><span class="k">def</span> <span class="nf">run_suite_tests</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span> <span class="n">framework</span><span class="p">,</span> <span class="n">cfg</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Executes the suite of test sets</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    subject: n/a</span>
+<span class="sd">        Subject Context</span>
+
+<span class="sd">    framework: n/a</span>
+<span class="sd">        Framework Context</span>
+
+<span class="sd">    cfg: Config</span>
+<span class="sd">        Configuration Context</span>
+
+<span class="sd">    Return</span>
+<span class="sd">    ------</span>
+
+<span class="sd">    results: list</span>
+<span class="sd">        A list of the test results</span>
+
+<span class="sd">    exception_sets: dict</span>
+<span class="sd">        A dictionary of exeption sets</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">exception_sets</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># Run each project&#39;s tests.</span>
+    <span class="k">for</span> <span class="n">test_set</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">sets</span><span class="p">:</span>
+        <span class="n">data_set</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">penalty_totals</span><span class="p">,</span> <span class="n">exception_list</span> <span class="o">=</span> <span class="n">run_test_set</span><span class="p">(</span><span class="n">test_set</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">framework</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+        <span class="n">exception_sets</span><span class="p">[</span><span class="n">test_set</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">exception_list</span>
+
+        <span class="c1"># If the project didn&#39;t compile, just add a single line indicating that.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">exception_sets</span><span class="p">[</span><span class="n">test_set</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data_set</span><span class="p">)</span>
+            <span class="n">data_set</span> <span class="o">=</span> <span class="p">[[],</span> <span class="p">[</span><span class="s2">&quot;Grade: 0 (Does not compile / run)&quot;</span><span class="p">]]</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Add info on the score and penalty values for the project.</span>
+            <span class="n">data_set</span> <span class="o">+=</span> <span class="p">[</span> <span class="p">[],</span> <span class="p">[</span><span class="s2">&quot;Test Cases: </span><span class="si">%.2f</span><span class="s2"> (</span><span class="si">%.2f%%</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">score</span> <span class="o">*</span> <span class="n">test_set</span><span class="o">.</span><span class="n">max_score</span><span class="p">,</span> <span class="n">score</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span> <span class="p">]</span> <span class="p">]</span>
+            <span class="n">overall_penalty</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">for</span> <span class="n">penalty_num</span><span class="p">,</span> <span class="n">case_penalty</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">test_set</span><span class="o">.</span><span class="n">case_penalties</span><span class="p">):</span>
+                <span class="n">penalty_name</span><span class="p">,</span> <span class="n">magnitude</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">case_penalty</span>
+                <span class="n">overall_penalty</span> <span class="o">+=</span> <span class="n">penalty_totals</span><span class="p">[</span><span class="n">penalty_num</span><span class="p">]</span>
+                <span class="n">data_set</span> <span class="o">+=</span> <span class="p">[</span> <span class="p">[</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> Penalty (overall): </span><span class="si">%.2f%%</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">penalty_name</span><span class="p">,</span> <span class="n">penalty_totals</span><span class="p">[</span><span class="n">penalty_num</span><span class="p">]</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span> <span class="p">]</span> <span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">penalty_num</span><span class="p">,</span> <span class="n">set_penalty</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">test_set</span><span class="o">.</span><span class="n">set_penalties</span><span class="p">):</span>
+                <span class="n">penalty_name</span><span class="p">,</span> <span class="n">magnitude</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">test_set</span><span class="o">.</span><span class="n">set_penalties</span><span class="p">[</span><span class="n">penalty_num</span><span class="p">]</span>
+                <span class="n">penalty_ind</span> <span class="o">=</span> <span class="n">penalty_num</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">test_set</span><span class="o">.</span><span class="n">case_penalties</span><span class="p">)</span>
+                <span class="n">overall_penalty</span> <span class="o">+=</span> <span class="n">penalty_totals</span><span class="p">[</span><span class="n">penalty_ind</span><span class="p">]</span>
+                <span class="n">data_set</span> <span class="o">+=</span> <span class="p">[</span> <span class="p">[</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> Penalty (overall): </span><span class="si">%.2f%%</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">penalty_name</span><span class="p">,</span> <span class="n">penalty_totals</span><span class="p">[</span><span class="n">penalty_ind</span><span class="p">]</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span> <span class="p">]</span> <span class="p">]</span>
+
+            <span class="c1"># Apply the penalties and scale to the number of points</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="p">(</span><span class="n">score</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">test_set</span><span class="o">.</span><span class="n">max_penalty</span><span class="p">,</span> <span class="n">overall_penalty</span><span class="p">))</span> <span class="o">*</span> <span class="n">test_set</span><span class="o">.</span><span class="n">max_score</span>
+
+        <span class="c1"># Add to the results list.</span>
+        <span class="n">data_set</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">&quot;Test-Set </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">test_set</span><span class="o">.</span><span class="n">name</span><span class="p">]]</span> <span class="o">+</span> <span class="n">data_set</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">test_set</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">data_set</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">results</span><span class="p">,</span> <span class="n">exception_sets</span></div>
+
+
+<div class="viewcode-block" id="run_test_set"><a class="viewcode-back" href="../../herptest.html#herptest.run_test_suite.run_test_set">[docs]</a><span class="k">def</span> <span class="nf">run_test_set</span><span class="p">(</span><span class="n">test_set</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">framework</span><span class="p">,</span> <span class="n">cfg</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Executes the test set</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    test_set: TestSet</span>
+<span class="sd">        The test set configuration context</span>
+
+<span class="sd">    subject: n/a</span>
+<span class="sd">        n/a</span>
+
+<span class="sd">    framework: n/a</span>
+<span class="sd">        n/a</span>
+<span class="sd">    </span>
+<span class="sd">    cfg: n/a</span>
+<span class="sd">        n/a</span>
+
+<span class="sd">    Return</span>
+<span class="sd">    ------</span>
+
+<span class="sd">    data_set: tuple</span>
+<span class="sd">        The data set that was used to calculate the score</span>
+
+<span class="sd">    score/num_of_tests: float</span>
+<span class="sd">        The proportion of the grade score of succeeded tests</span>
+<span class="sd">        </span>
+<span class="sd">    penalty_totals: int</span>
+<span class="sd">        The total points that will be deducted from the proportion</span>
+<span class="sd">        </span>
+<span class="sd">    exception_list: n/a</span>
+<span class="sd">        n/a</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Prepare data structures and initialize the test set.</span>
+    <span class="n">exception_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">set_context</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">initialize_test_set</span><span class="p">(</span><span class="n">test_set</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">framework</span><span class="p">)</span>
+    <span class="n">num_of_tests</span> <span class="o">=</span> <span class="n">test_set</span><span class="o">.</span><span class="n">get_num_tests</span><span class="p">(</span><span class="n">set_context</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">framework</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+    <span class="n">penalty_totals</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test_set</span><span class="o">.</span><span class="n">case_penalties</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">test_set</span><span class="o">.</span><span class="n">set_penalties</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num_of_tests</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">num_of_tests</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">cfg</span><span class="o">.</span><span class="n">shutdown_test_set</span><span class="p">(</span><span class="n">set_context</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;get_number_of_tests() returned [</span><span class="si">%s</span><span class="s2">]&quot;</span> <span class="o">%</span> <span class="n">num_of_tests</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">exception_list</span>
+
+    <span class="c1"># Add the initial notes at the top (might adjust this later for &#39;pure&#39; CSV output)</span>
+    <span class="n">data_set</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span> <span class="s2">&quot;Number of tests: </span><span class="si">%d</span><span class="s2">.&quot;</span> <span class="o">%</span> <span class="n">num_of_tests</span> <span class="p">],</span> <span class="p">[]</span> <span class="p">]</span>
+
+    <span class="c1"># Prepare the header.</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;Test No.&#39;</span><span class="p">,</span> <span class="s1">&#39;Score&#39;</span><span class="p">,</span> <span class="s1">&#39;Message&#39;</span><span class="p">,</span> <span class="s1">&#39;Desc.&#39;</span> <span class="p">]</span>
+    <span class="n">header</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">-Pen&quot;</span> <span class="o">%</span> <span class="n">penalty</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">penalty</span> <span class="ow">in</span> <span class="n">test_set</span><span class="o">.</span><span class="n">case_penalties</span><span class="p">])</span>
+    <span class="n">data_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+
+    <span class="n">score</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">test_num</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_of_tests</span><span class="p">):</span>
+        <span class="c1"># Set up the row for this test and run it.</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">test_num</span> <span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">case_result</span> <span class="o">=</span> <span class="n">test_set</span><span class="o">.</span><span class="n">run_case_test</span><span class="p">(</span><span class="n">test_num</span><span class="p">,</span> <span class="n">set_context</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">framework</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">stack_trace</span> <span class="o">=</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span>
+            <span class="n">exception_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Test </span><span class="si">%d</span><span class="s2">, </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">test_num</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">stack_trace</span><span class="p">))</span>
+            <span class="n">case_result</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+        <span class="c1"># If we successfuly completed the run, this should be a number; otherwise, a message.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">case_result</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Number</span><span class="p">):</span>
+            <span class="n">case_score</span> <span class="o">=</span> <span class="n">case_result</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">case_score</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">case_result</span><span class="p">)</span>
+
+        <span class="n">score</span> <span class="o">+=</span> <span class="n">case_score</span>
+        <span class="c1"># Add score, run message, and description as applicable</span>
+        <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%.2f%%</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">case_score</span> <span class="o">*</span> <span class="mi">100</span><span class="p">))</span>
+        <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span> <span class="k">if</span> <span class="n">message</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">test_set</span><span class="o">.</span><span class="n">get_test_desc</span><span class="p">(</span><span class="n">test_num</span><span class="p">,</span> <span class="n">set_context</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">framework</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span> <span class="k">if</span> <span class="nb">round</span><span class="p">(</span><span class="n">case_score</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">case_score</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">data_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Go through each penalty and run it (if valid).</span>
+        <span class="k">for</span> <span class="n">penalty_num</span><span class="p">,</span> <span class="n">case_penalty</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">test_set</span><span class="o">.</span><span class="n">case_penalties</span><span class="p">):</span>
+            <span class="n">penalty_name</span><span class="p">,</span> <span class="n">magnitude</span><span class="p">,</span> <span class="n">pen_function</span> <span class="o">=</span> <span class="n">case_penalty</span>
+            <span class="n">penalty</span> <span class="o">=</span> <span class="n">pen_function</span><span class="p">(</span><span class="n">penalty_num</span><span class="p">,</span> <span class="n">test_num</span><span class="p">,</span> <span class="n">set_context</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">framework</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+            <span class="n">penalty_totals</span><span class="p">[</span><span class="n">penalty_num</span><span class="p">]</span> <span class="o">+=</span> <span class="n">penalty</span> <span class="o">*</span> <span class="n">magnitude</span> <span class="o">*</span> <span class="n">case_score</span> <span class="o">/</span> <span class="n">num_of_tests</span>
+            <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%.2f%%</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">penalty</span> <span class="o">*</span> <span class="mi">100</span><span class="p">))</span>
+
+        <span class="c1"># Add this test data to the data set.</span>
+        <span class="n">data_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">penalty_num</span><span class="p">,</span> <span class="n">set_penalty</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">test_set</span><span class="o">.</span><span class="n">set_penalties</span><span class="p">):</span>
+        <span class="n">penalty_name</span><span class="p">,</span> <span class="n">magnitude</span><span class="p">,</span> <span class="n">pen_function</span> <span class="o">=</span> <span class="n">set_penalty</span>
+        <span class="n">penalty</span> <span class="o">=</span> <span class="n">pen_function</span><span class="p">(</span><span class="n">penalty_num</span><span class="p">,</span> <span class="n">set_context</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">framework</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span> <span class="o">*</span> <span class="n">score</span> <span class="o">*</span> <span class="n">magnitude</span>
+        <span class="n">penalty_totals</span><span class="p">[</span><span class="n">penalty_num</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">test_set</span><span class="o">.</span><span class="n">case_penalties</span><span class="p">)]</span> <span class="o">=</span> <span class="n">penalty</span>
+
+    <span class="c1"># Return the data set, score (proportion), and penalty totals</span>
+    <span class="n">cfg</span><span class="o">.</span><span class="n">shutdown_test_set</span><span class="p">(</span><span class="n">set_context</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">data_set</span><span class="p">,</span> <span class="n">score</span> <span class="o">/</span> <span class="n">num_of_tests</span><span class="p">,</span> <span class="n">penalty_totals</span><span class="p">,</span> <span class="n">exception_list</span></div>
+
+
+<span class="c1"># Build the environment components (only need to do this once.)</span>
+<div class="viewcode-block" id="prepare_and_init_framework"><a class="viewcode-back" href="../../herptest.html#herptest.run_test_suite.prepare_and_init_framework">[docs]</a><span class="k">def</span> <span class="nf">prepare_and_init_framework</span><span class="p">(</span><span class="n">cfg</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build the environment components (only need to do this once.)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    cfg: Config</span>
+<span class="sd">        Test Suite Configuration that has initialized values (paths adjusted to the absolute paths)</span>
+
+<span class="sd">    Return</span>
+<span class="sd">    ------</span>
+
+<span class="sd">    framework_data: dict</span>
+<span class="sd">        A dictionary that holds framework context values</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">prep_cmd</span> <span class="ow">or</span> <span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">compile_cmd</span> <span class="ow">or</span> <span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">post_cmd</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Prepping / building framework environment... &quot;</span><span class="p">)</span>
+        <span class="n">result_error</span><span class="p">,</span> <span class="n">error_output</span> <span class="o">=</span> <span class="n">build_project</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">framework_src</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">framework_bin</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result_error</span><span class="p">:</span>
+            <span class="n">error_text</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">result_error</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">result_error</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">error_output</span> <span class="k">if</span> <span class="n">error_output</span> <span class="k">else</span> <span class="n">error_text</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">error_text</span><span class="p">)</span>
+            <span class="k">return</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Initializing framework... &quot;</span><span class="p">)</span>
+    <span class="n">framework_data</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">initialize_framework</span><span class="p">()</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;done.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">framework_data</span></div>
+
+<span class="c1"># For each submission, copy the base files, then the submission, into the destination folder.</span>
+<div class="viewcode-block" id="prepare_and_test_submission"><a class="viewcode-back" href="../../herptest.html#herptest.run_test_suite.prepare_and_test_submission">[docs]</a><span class="k">def</span> <span class="nf">prepare_and_test_submission</span><span class="p">(</span><span class="n">submission</span><span class="p">,</span> <span class="n">framework_context</span><span class="p">,</span> <span class="n">cfg</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    For each submission, copy the base files, then the submission, into the destination folder.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    submission: n/a</span>
+<span class="sd">        n/a</span>
+
+<span class="sd">    framework_context: n/a</span>
+<span class="sd">        n/a</span>
+
+<span class="sd">    cfg: n/a</span>
+<span class="sd">        n/a</span>
+
+<span class="sd">    Return</span>
+<span class="sd">    ------</span>
+<span class="sd">    </span>
+<span class="sd">    results: n/a</span>
+<span class="sd">        n/a</span>
+
+<span class="sd">    exception_sets: n/a</span>
+<span class="sd">        n/a</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Because this might be in a new process, we wil need to reset the console logger when prep the project.</span>
+    <span class="n">console_logger</span> <span class="o">=</span> <span class="n">toolbox</span><span class="o">.</span><span class="n">SelectiveStreamHandler</span><span class="p">(</span><span class="n">INFO</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="n">WARNING</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">WARN</span><span class="p">,</span> <span class="n">CRITICAL</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">logformat</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span> <span class="n">handlers</span><span class="o">=</span><span class="p">[</span><span class="n">console_logger</span><span class="p">])</span>
+    <span class="n">root_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">console_logger</span><span class="o">.</span><span class="n">terminator</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">submission</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># Create a new subject folder with base files in it - then copy over the submission to be tested.</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">destination</span><span class="p">):</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">destination</span><span class="p">)</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">destination</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">base</span><span class="p">:</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">copytree</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">base</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">destination</span><span class="p">,</span> <span class="n">dirs_exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">shutil</span><span class="o">.</span><span class="n">copytree</span><span class="p">(</span><span class="n">submission</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">destination</span><span class="p">,</span> <span class="n">dirs_exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Build the project.</span>
+    <span class="n">setup_exceptions</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Prepping / building project(s) for &quot;</span> <span class="o">+</span> <span class="n">submission</span> <span class="o">+</span> <span class="s2">&quot;... &quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">prep_cmd</span> <span class="ow">or</span> <span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">compile_cmd</span> <span class="ow">or</span> <span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">post_cmd</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">,</span> <span class="n">output</span> <span class="o">=</span> <span class="n">build_project</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">subject_src</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">subject_bin</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">build</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;error building (see logs)... &quot;</span><span class="p">)</span>
+            <span class="n">error_text</span> <span class="o">=</span> <span class="s2">&quot;While prepping/building, </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
+            <span class="n">error_text</span> <span class="o">+=</span> <span class="n">output</span> <span class="k">if</span> <span class="n">output</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">setup_exceptions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">error_text</span><span class="p">)</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Initializing... &quot;</span><span class="p">)</span>
+    <span class="n">subject_context</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">starting_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">subject_context</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">initialize_subject</span><span class="p">(</span><span class="n">submission</span><span class="p">,</span> <span class="n">framework_context</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;error initializing (see logs)... &quot;</span><span class="p">)</span>
+        <span class="n">setup_exceptions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Error initializing subject </span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">submission</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">error</span><span class="p">))</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">starting_dir</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;done.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">starting_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="n">results</span><span class="p">,</span> <span class="n">exception_sets</span> <span class="o">=</span> <span class="n">run_suite_tests</span><span class="p">(</span><span class="n">subject_context</span><span class="p">,</span> <span class="n">framework_context</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+    <span class="n">cfg</span><span class="o">.</span><span class="n">shutdown_subject</span><span class="p">(</span><span class="n">subject_context</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">starting_dir</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">setup_exceptions</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">exception_sets</span><span class="p">[</span><span class="s2">&quot;Setup&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">setup_exceptions</span>
+
+    <span class="k">return</span> <span class="n">results</span><span class="p">,</span> <span class="n">exception_sets</span></div>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../herptest.html#herptest.run_test_suite.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handles the herp utility build, test, and shutdown routines</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dill</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;recurse&#39;</span><span class="p">]</span><span class="o">=</span><span class="kc">True</span>
+
+    <span class="n">runtime</span> <span class="o">=</span> <span class="n">parse_arguments</span><span class="p">()</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        When you run the test_suite, there are little modifiers (arguments that you can make)</span>
+<span class="sd">        that you pass directly into get_suite_config, which creates a config object that uses</span>
+<span class="sd">        those arguments as well.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c1"># Save the current folder and move to the test suite location.</span>
+    <span class="n">starting_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">runtime</span><span class="o">.</span><span class="n">suite_path</span><span class="p">)</span>
+
+    <span class="c1"># Load the config file for this project.</span>
+    <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;Settings&quot;</span><span class="p">,</span><span class="s2">&quot;config.py&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="s2">&quot;Settings&quot;</span><span class="p">):</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Error: no settings folder. Exiting...</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="p">(</span><span class="n">config</span> <span class="o">:=</span> <span class="n">toolbox</span><span class="o">.</span><span class="n">load_module</span><span class="p">(</span><span class="n">config_path</span><span class="p">)):</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Error: could not load configuration file. Exiting...</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_suite_config</span><span class="p">(</span><span class="n">runtime</span><span class="p">)</span>
+    <span class="n">cfg</span><span class="o">.</span><span class="n">make_paths_absolute</span><span class="p">()</span>
+
+    <span class="c1"># Prepare result paths.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">result_path</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">result_path</span><span class="p">)</span>
+    <span class="n">summary_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">result_path</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">summary_file</span><span class="p">)</span>
+
+    <span class="c1"># Set up logging.</span>
+    <span class="n">console_logger</span> <span class="o">=</span> <span class="n">toolbox</span><span class="o">.</span><span class="n">SelectiveStreamHandler</span><span class="p">(</span><span class="n">INFO</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="n">WARNING</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">WARN</span><span class="p">,</span> <span class="n">CRITICAL</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">logformat</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span> <span class="n">handlers</span><span class="o">=</span><span class="p">[</span><span class="n">console_logger</span><span class="p">])</span>
+    <span class="n">root_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">console_logger</span><span class="o">.</span><span class="n">terminator</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="n">logfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">result_path</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">error_log</span><span class="p">)</span>
+    <span class="n">file_logger</span> <span class="o">=</span> <span class="n">toolbox</span><span class="o">.</span><span class="n">SelectiveFileHandler</span><span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">DEBUG</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span> <span class="n">ERROR</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">root_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">file_logger</span><span class="p">)</span>
+
+    <span class="c1"># Write header for summary file.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">toolbox</span><span class="o">.</span><span class="n">save_csv</span><span class="p">(</span><span class="n">summary_path</span><span class="p">,</span> <span class="p">[[</span> <span class="s2">&quot;Student&quot;</span><span class="p">,</span> <span class="s2">&quot;LMS ID&quot;</span><span class="p">,</span> <span class="s2">&quot;Score&quot;</span> <span class="p">]])</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Warning: couldn&#39;t open summary file for writing: [</span><span class="si">%s</span><span class="s2">]&quot;</span> <span class="o">%</span> <span class="n">summary_path</span><span class="p">)</span>
+
+    <span class="c1"># Initialize the framework / get any important info</span>
+<span class="c1">#    with futures.ProcessPoolExecutor() as executor:</span>
+<span class="c1">#        try:</span>
+<span class="c1">#            future = executor.submit(prepare_and_init_framework, cfg)</span>
+<span class="c1">#            framework_context = future.result()</span>
+            <span class="c1"># This is a fatal error; if we can&#39;t initalize the framework, we should stop here.</span>
+<span class="c1">#        except Exception as e:</span>
+<span class="c1">#            sys.stderr.write(&quot;Error initializing framework - %s: %s. Exiting.\n&quot; % (type(e).__name__, e))</span>
+<span class="c1">#            exit()</span>
+    <span class="n">framework_context</span> <span class="o">=</span> <span class="n">prepare_and_init_framework</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+
+    <span class="c1"># Close general log file and move on to student-specific logs.</span>
+    <span class="n">root_logger</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">file_logger</span><span class="p">)</span>
+    <span class="n">file_logger</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="c1"># Prepare and run each submission.</span>
+    <span class="k">for</span> <span class="n">submission</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">target_path</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">set</span><span class="p">)):</span>
+        <span class="n">submission_info</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">submission</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">student_name</span><span class="p">,</span> <span class="n">lms_id</span> <span class="o">=</span> <span class="n">submission_info</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;NONE&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">submission_info</span><span class="p">))</span>
+        <span class="n">output_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">result_path</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">submission</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">output_dir</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
+
+        <span class="n">logfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">error_log</span><span class="p">)</span>
+        <span class="n">file_logger</span> <span class="o">=</span> <span class="n">toolbox</span><span class="o">.</span><span class="n">SelectiveFileHandler</span><span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">DEBUG</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span> <span class="n">ERROR</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">root_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">file_logger</span><span class="p">)</span>
+
+        <span class="n">exec_class</span> <span class="o">=</span> <span class="n">pools</span><span class="o">.</span><span class="n">ThreadPool</span> <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">threaded</span> <span class="k">else</span> <span class="n">pools</span><span class="o">.</span><span class="n">ProcessPool</span>
+        <span class="k">with</span> <span class="n">exec_class</span><span class="p">()</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">future</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">apipe</span><span class="p">(</span><span class="n">prepare_and_test_submission</span><span class="p">,</span> <span class="n">submission</span><span class="p">,</span> <span class="n">framework_context</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+                <span class="n">suite_results</span><span class="p">,</span> <span class="n">exception_sets</span> <span class="o">=</span> <span class="n">future</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                <span class="c1"># If there were exceptions in the tests, we should log them.</span>
+                <span class="k">for</span> <span class="n">project</span><span class="p">,</span> <span class="n">exception_list</span> <span class="ow">in</span> <span class="n">exception_sets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                   <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exception_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                       <span class="n">log_header</span> <span class="o">=</span> <span class="s2">&quot;Exceptions for </span><span class="si">%s</span><span class="se">\n</span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">project</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="o">*</span><span class="p">(</span><span class="mi">15</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">project</span><span class="p">)))</span>
+                       <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">log_header</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">exception_list</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">stack_trace</span> <span class="o">=</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error preparing / running </span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">submission</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">stack_trace</span><span class="p">))</span>
+                <span class="n">root_logger</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">file_logger</span><span class="p">)</span>
+                <span class="n">file_logger</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">continue</span>
+
+        <span class="c1"># Generate and save individual test score information to results file.</span>
+        <span class="n">grand_total</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="n">file_data</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">&quot;Scores for </span><span class="si">%s</span><span class="s2"> (LMS ID: </span><span class="si">%s</span><span class="s2">)...&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">student_name</span><span class="p">,</span> <span class="n">lms_id</span><span class="p">)]]</span>
+
+        <span class="k">if</span> <span class="n">suite_results</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">data_set</span> <span class="ow">in</span> <span class="n">suite_results</span><span class="p">:</span>
+                <span class="n">file_data</span><span class="o">.</span><span class="n">extend</span><span class="p">([[]]</span> <span class="o">+</span> <span class="n">data_set</span> <span class="o">+</span> <span class="p">[[</span><span class="s2">&quot;Set Total: </span><span class="si">%.3f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">result</span><span class="p">]])</span>
+                <span class="n">grand_total</span> <span class="o">+=</span> <span class="n">result</span>
+
+        <span class="n">file_data</span><span class="o">.</span><span class="n">extend</span><span class="p">([[],</span> <span class="p">[</span><span class="s2">&quot;Overall Score: </span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">grand_total</span><span class="p">]])</span>
+        <span class="n">toolbox</span><span class="o">.</span><span class="n">save_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">result_file</span><span class="p">),</span> <span class="n">file_data</span><span class="p">)</span>
+
+        <span class="c1"># Add data to summary file for this submission.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">toolbox</span><span class="o">.</span><span class="n">append_csv</span><span class="p">(</span><span class="n">summary_path</span><span class="p">,</span> <span class="p">[[</span><span class="n">student_name</span><span class="p">,</span> <span class="n">lms_id</span><span class="p">,</span> <span class="n">grand_total</span><span class="p">]])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="c1"># Fail silently; we should have already detected the error when creating the file.</span>
+            <span class="k">pass</span>
+
+        <span class="n">root_logger</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">file_logger</span><span class="p">)</span>
+        <span class="n">file_logger</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">cfg</span><span class="o">.</span><span class="n">shutdown_framework</span><span class="p">(</span><span class="n">framework_context</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Framework shutdown&quot;</span><span class="p">)</span>
+    <span class="c1"># Return to where we started at.</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">starting_dir</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Jeremiah Blanchard, Jack, Robert, Lunafreya Nyugen, Renee Kaynor.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

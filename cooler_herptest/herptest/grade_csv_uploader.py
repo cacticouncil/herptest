@@ -49,11 +49,14 @@ class Rubric:
 
 class Student:
     def __init__(self):
-        self.id = ""
+        self.last_name = ""
+        self.first_name = ""
         self.grade = 0
         self.rubric: list[(float, str)] = []
 
     def __str__(self):
+        print(f"Last Name: {self.last_name}")
+        print(f"First Name: {self.last_name}")
         print(f"ID: {self.id}")
         print(f"Grade: {self.last_name}")
         print(f"Rubric: {self.rubric}")

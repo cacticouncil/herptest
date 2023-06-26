@@ -1,3 +1,4 @@
+import math
 import os
 from canvasapi import Canvas
 from csv import reader
@@ -68,6 +69,10 @@ class CanvasWrapper:
                 for sub in assn.get_submissions():
                     for res in results:
                         if(str(sub.user_id) == res[1]):
+                            # If the submission is late, then there 10% off for each day late
+                            # [temporary proof of concept for automatic late penalties]
+                            if(sub.late):
+                                res[2] = float(res[2]) - (10 * math.ceil(sub.seconds_late/86400.0))
                             print("Score of " + res[0] + ", ID: " + res[1] + " changed from " + str(sub.score) + " to " + str(float(res[2])) + ".")
                             sub.edit(
                                 submission = {

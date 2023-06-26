@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 import sys
 import argparse
 # TODO: fix import formatting for CLI command
-from pengtest.env_wrapper import EnvWrapper
+# from pengtest.env_wrapper import EnvWrapper
+from herptest.env_wrapper import EnvWrapper
 
 # Version Number for Release
 VERSION_NUM = '0.9.9.5'
@@ -72,7 +73,8 @@ class CanvasUtil:
         """
         Get dictionary (name -> id) of courses in this semester
         """
-        response = requests.get(f"{self.canvas_api_url}/courses?enrollment_type=teacher&include=items&per_page=1000", auth=BearerAuth(self.token))
+        # response = requests.get(f"{self.canvas_api_url}/courses?enrollment_type=teacher&include=items&per_page=1000", auth=BearerAuth(self.token))
+        response = requests.get(f"{self.canvas_api_url}/courses?enrollment_type=ta&include=items&per_page=1000", auth=BearerAuth(self.token))
         content = response.json()
         # try:
         #     enrollment_term_id = content[0]["enrollment_term_id"]
@@ -322,7 +324,8 @@ def main():
     course_names = list(courses.keys())
     print(course_names)
     # You *must* be of role teacher to see your courses, this can be changed if different roles needed
-    print("-=- Listing all courses for which you have role: Teacher in current enrollemnt period -=-")
+    # print("-=- Listing all courses for which you have role: Teacher in current enrollemnt period -=-")
+    print("-=- Listing all courses for which you have role: TA in current enrollemnt period -=-")
     temp_count = 0
     # iterate over list of courses and print of the choices
     for name in courses:

@@ -402,7 +402,7 @@ def main():
         time.sleep(2)
 
     cfg.shutdown_framework(framework_context)
-    logging.info("Framework shutdown")
+    logging.info("Framework shutdown\n")
     # Return to where we started at.
     os.chdir(starting_dir)
 

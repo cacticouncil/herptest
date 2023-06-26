@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import requests, urllib.request
 import sys
 import argparse
-from pengtest.env_wrapper import EnvWrapper
+from env_wrapper import EnvWrapper
 
 class CanvasWrapper:
     def __init__(self, API_URL, env_path, user_type, token_type="TOKEN"): #Initializes CanvasWrapper object which stores an authenticated CanvasAPI Canvas object
@@ -85,7 +85,7 @@ def env_setup():
 def parse_arguments():
     parser = argparse.ArgumentParser(description='A program to automatically push grades or pull submissions to a Canvas assignment')
     parser.add_help = True
-    parser.add_argument('-E', '-e', '--setupenv', action='store_true', help='Run the setup wizard for Canvas API Key Environment Variables')
+    parser.add_argument('-S', '-s', '--setupenv', action='store_true', help='Run the setup wizard for Canvas API Key Environment Variables')
     config = parser.parse_args(sys.argv[1:])
     config.logformat = "%(message)s"
     return config

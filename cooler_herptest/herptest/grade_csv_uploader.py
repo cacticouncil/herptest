@@ -7,8 +7,7 @@ import json
 from dotenv import load_dotenv
 import sys
 import argparse
-# TODO: fix import formatting for CLI command
-from pengtest.env_wrapper import EnvWrapper
+from env_wrapper import EnvWrapper
 
 # Version Number for Release
 VERSION_NUM = '0.9.9.5'
@@ -300,12 +299,17 @@ def main():
 
     # CanvasUtil object, driver object for functionality,
     # if you want beta or production, a different .env path, or token, enter here into constructor.
+    user_type = input("Are you using Canvas as a Teacher or a TA? {Choices: teacher, ta} ")
+    if user_type != "teacher" and user_type != "ta":
+        print("| InputError: Your input does not match one of the chosen types.")
+        print("└─> exiting with error")
+        exit(-1)
     canvas_type = input("Would you like to upload to Live Canvas or Canvas Beta? {Choices: Live, Beta} ")
     if canvas_type == "Live" or canvas_type == "live":
-        canvas_util = CanvasUtil(PRODUCTION_URL,DOT_ENV_PATH,PRODUCTION_TOKEN_TYPE)
+        canvas_util = CanvasUtil(PRODUCTION_URL,DOT_ENV_PATH,PRODUCTION_TOKEN_TYPE, user_type)
         print("Starting CSV Uploader With Parameters -> API_URL:",PRODUCTION_URL,"-> DOT_ENV: ",DOT_ENV_PATH,"-> TOKEN_TYPE:",PRODUCTION_TOKEN_TYPE)
     elif canvas_type == "Beta" or canvas_type == "beta":
-        canvas_util = CanvasUtil(BETA_URL,DOT_ENV_PATH,BETA_TOKEN_TYPE)
+        canvas_util = CanvasUtil(BETA_URL,DOT_ENV_PATH,BETA_TOKEN_TYPE, user_type)
         print("Starting CSV Uploader With Parameters -> API_URL:",BETA_URL,"-> DOT_ENV:",DOT_ENV_PATH,"-> TOKEN_TYPE:",BETA_TOKEN_TYPE)
     else:
         print("| InputError: Your input does not match one of the chosen types.")
@@ -324,7 +328,7 @@ def main():
     course_names = list(courses.keys())
     print(course_names)
     # You *must* be of role teacher to see your courses, this can be changed if different roles needed
-    print("-=- Listing all courses for which you have role: Teacher in current enrollemnt period -=-")
+    print("-=- Listing all courses for which you have role: Teacher in current enrollment period -=-")
     temp_count = 0
     # iterate over list of courses and print of the choices
     for name in courses:

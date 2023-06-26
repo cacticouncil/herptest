@@ -1,29 +1,26 @@
 import math
 import os
+import shutil
 from canvasapi import Canvas
 from csv import reader
 from dotenv import load_dotenv
 import requests, urllib.request
 import sys
 import argparse
-# from pengtest.env_wrapper import EnvWrapper
-from env_wrapper import EnvWrapper
+from pengtest.env_wrapper import EnvWrapper
 
+# For testing purposes- turn off when not testing
+testStudent = True
 
 class CanvasWrapper:
-    def __init__(self, API_URL, env_path, user_type, token_type="TOKEN"): #Initializes CanvasWrapper object which stores an authenticated CanvasAPI Canvas object
+    def __init__(self, API_URL, env_path, token_type="TOKEN"): #Initializes CanvasWrapper object which stores an authenticated CanvasAPI Canvas object
         self.canv_url = API_URL
         load_dotenv(env_path)
         self.canv_token = os.getenv(token_type)
         self.canv = Canvas(API_URL, self.canv_token)
-        self.userType = user_type
 
-    # Leave as tbd for later okay Luna
-    # def get_courses(self): #Get all courses with enrollment type of whatever is passed in
-    #     return self.canv.get_courses(enrollment_type=self.userType)
     def get_courses(self): #Get all courses with enrollment type of teacher
-        # return self.canv.get_courses(enrollment_type='teacher')
-        return self.canv.get_courses(enrollment_type='ta')
+        return self.canv.get_courses(enrollment_type='teacher')
     
     def get_assignments(self, course): #Get all assignments in a course using the passed in course ID
         return self.canv.get_course(course).get_assignments()
@@ -46,20 +43,47 @@ class CanvasWrapper:
 
 
     def get_download_link(self, _course, assignment): #Get submissions.zip download link from a given course assignment using the passed in course name and assignment name
+        # default directory- recreate if already exists
+        subdir = os.getcwd() + "/submissions"
+        if(os.path.exists(subdir)):
+            shutil.rmtree(subdir)
+        else:
+            os.mkdir(subdir)
+        # lastnamefirstname
+        names = {1267749: 'studenttest'}
+        for courses in self.get_courses():
+            if courses.name == _course:
+                for user in courses.get_users():
+                    splitName = user.name.split()
+                    names[user.id] = splitName[1].lower() + splitName[0].lower()
         for assn in self.get_assignments(list(course.id for course in self.get_courses() if course.name == _course)[0]):
             if(assignment == assn.name):
+                allSubmissions = assn.get_submissions()
+                for subm in allSubmissions:
+                    for attch in subm.attachments:
+                        if (subm.late):
+                            submissionFile = requests.get(attch.url)
+                            open("submissions/" + str(names[subm.user_id]) + "_LATE_" + str(subm.user_id) + "_" + str(subm.assignment_id) + "_" + attch.filename, "wb").write(submissionFile.content)
+                        else:
+                            submissionFile = requests.get(attch.url)
+                            open("submissions/" + str(names[subm.user_id]) + "_" + str(subm.user_id) + "_" + str(subm.assignment_id) + "_" + attch.filename, "wb").write(submissionFile.content)
+                        shutil.make_archive("submissions", 'zip', subdir)
+                        print(attch.url)
                 return assn.submissions_download_url
-
     def download_submissions(self, _course, assignment, path): #Automatically download submissions.zip from a course assignment (course name, assignment name) to the given path
         for assn in self.get_assignments(list(course.id for course in self.get_courses() if course.name == _course)[0]):
             if(assignment == assn.name):
-                print(assn.submissions_download_url)
                 # Retrofit this code to actually authenticate
                 #r = requests.get(assn.submissions_download_url, auth=grade_csv_uploader.BearerAuth(self.canv_token))
                 #open(path, 'wb').write(r.content)
+
+                allSubmissions = assn.get_submissions()
+                for subm in allSubmissions:
+                    for attch in subm.attachments:
+                        print(attch.url)
                 
                 #this code works on matty's machine apparently,  but nowhere else
-                urllib.request.urlretrieve(assn.submissions_download_url, path)
+                #urllib.request.urlretrieve(assn.submissions_download_url, path)
 
 
     def push_grades(self, _course, assignment, path): #Push grades to Canvas assignment (course name, assignment name) using the summary.csv from the given path
@@ -112,37 +136,30 @@ def main():
     arg_config = parse_arguments()
     if arg_config.setupenv == True:
         env_setup()
-
-    user_type = input("Are you using Canvas as a Teacher or a TA? {Choices: teacher, ta} ")
-    if user_type != "teacher" and user_type != "ta":
+    
+    canvas_type = input("Would you like to upload to Live Canvas or Canvas Beta? {Choices: Live, Beta} ")
+    if canvas_type == "Live" or canvas_type == "live":
+        canvas = CanvasWrapper(PRODUCTION_URL,DOT_ENV_PATH,PRODUCTION_TOKEN_TYPE)
+        print("Starting CSV Uploader With Parameters -> API_URL:",PRODUCTION_URL,"-> DOT_ENV: ",DOT_ENV_PATH,"-> TOKEN_TYPE:",PRODUCTION_TOKEN_TYPE)
+    elif canvas_type == "Beta" or canvas_type == "beta":
+        canvas = CanvasWrapper(BETA_URL,DOT_ENV_PATH,BETA_TOKEN_TYPE)
+        print("Starting CSV Uploader With Parameters -> API_URL:",BETA_URL,"-> DOT_ENV:",DOT_ENV_PATH,"-> TOKEN_TYPE:",BETA_TOKEN_TYPE)
+    else:
         print("| InputError: Your input does not match one of the chosen types.")
         print("└─> exiting with error")
         exit(-1)
-    else:
-        canvas_type = input("Would you like to upload to Live Canvas or Canvas Beta? {Choices: Live, Beta} ")
-        if canvas_type == "Live" or canvas_type == "live":
-            canvas = CanvasWrapper(PRODUCTION_URL,DOT_ENV_PATH,user_type,PRODUCTION_TOKEN_TYPE)
-            print("Starting CSV Uploader With Parameters -> API_URL:",PRODUCTION_URL,"-> DOT_ENV: ",DOT_ENV_PATH,"-> TOKEN_TYPE:",PRODUCTION_TOKEN_TYPE)
-        elif canvas_type == "Beta" or canvas_type == "beta":
-            canvas = CanvasWrapper(BETA_URL,DOT_ENV_PATH,user_type,BETA_TOKEN_TYPE)
-            print("Starting CSV Uploader With Parameters -> API_URL:",BETA_URL,"-> DOT_ENV:",DOT_ENV_PATH,"-> TOKEN_TYPE:",BETA_TOKEN_TYPE)
-        else:
-            print("| InputError: Your input does not match one of the chosen types.")
-            print("└─> exiting with error")
-            exit(-1)
 
     # CanvasWrapper object, driver object for functionality, if you want beta or production, a different .env path, or token, enter here into constructor.
 
     try:
         courses = canvas.get_courses()
-        print(courses[0])
     except:
-        print(f"| Canvas Util Object failed to be created. Either your API key is invalid or you have no courses as a {user_type}.")
+        print("| Canvas Util Object failed to be created. Is your API key valid?")
         print("| Hint: try using --setupenv to set up your environment variables.")
         print("└─> exiting with error")
         exit(-1)
 
-    print(f"-=- Listing all courses for which you have role: {user_type} -=-")
+    print("-=- Listing all courses for which you have role: Teacher -=-")
     temp_count = 0
     for course in courses:
         print(f"{temp_count}. {course.name}")
@@ -198,8 +215,7 @@ def main():
     elif choice == "Pull":
         print("-=- Fetching assignment download link w/ manual download mode enabled... -=-")
         dl_link = canvas.get_download_link(course_name, assn_name)
-        print("-=- Open the download link in your browser to download the assignment submissions -=-")
-        print(dl_link)
+        print("Downloaded successfully.")
         print("-=- Shutting down -=-")
 
 if __name__ == "__main__":

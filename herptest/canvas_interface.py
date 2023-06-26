@@ -1,8 +1,7 @@
 from PySide2 import QtCore, QtWidgets, QtGui
 import os, subprocess
 import numpy as np
-import pyautogui
-import grade_csv_uploader, canvas, env_dialog
+from herptest import grade_csv_uploader, canvas, env_dialog
 
 class AbstractCanvasInterface(QtWidgets.QWidget):
     #A generic interface for canvas assignments/ courses without any controls

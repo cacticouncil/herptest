@@ -5,7 +5,9 @@ from dotenv import load_dotenv
 import requests, urllib.request
 import sys
 import argparse
-from env_wrapper import EnvWrapper
+# from pengtest.env_wrapper import EnvWrapper
+from herptest.env_wrapper import EnvWrapper
+
 
 class CanvasWrapper:
     def __init__(self, API_URL, env_path, user_type, token_type="TOKEN"): #Initializes CanvasWrapper object which stores an authenticated CanvasAPI Canvas object
@@ -15,8 +17,12 @@ class CanvasWrapper:
         self.canv = Canvas(API_URL, self.canv_token)
         self.userType = user_type
 
-    def get_courses(self): #Get all courses with enrollment type of whatever is passed in
-        return self.canv.get_courses(enrollment_type=self.userType)
+    # Leave as tbd for later okay Luna
+    # def get_courses(self): #Get all courses with enrollment type of whatever is passed in
+    #     return self.canv.get_courses(enrollment_type=self.userType)
+    def get_courses(self): #Get all courses with enrollment type of teacher
+        # return self.canv.get_courses(enrollment_type='teacher')
+        return self.canv.get_courses(enrollment_type='ta')
     
     def get_assignments(self, course): #Get all assignments in a course using the passed in course ID
         return self.canv.get_course(course).get_assignments()

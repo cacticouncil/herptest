@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>herptest package &mdash; herptest_sphinx 0.9.9.16 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="herptest" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            herptest_sphinx
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">herptest</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">herptest package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-herptest.extract_lms_archive">herptest.extract_lms_archive module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.extract_lms_archive.Lms"><code class="docutils literal notranslate"><span class="pre">Lms</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.extract_lms_archive.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-herptest.run_test_suite">herptest.run_test_suite module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.run_test_suite.build_project"><code class="docutils literal notranslate"><span class="pre">build_project()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.run_test_suite.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.run_test_suite.parse_arguments"><code class="docutils literal notranslate"><span class="pre">parse_arguments()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.run_test_suite.prepare_and_init_framework"><code class="docutils literal notranslate"><span class="pre">prepare_and_init_framework()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.run_test_suite.prepare_and_test_submission"><code class="docutils literal notranslate"><span class="pre">prepare_and_test_submission()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.run_test_suite.run_suite_tests"><code class="docutils literal notranslate"><span class="pre">run_suite_tests()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.run_test_suite.run_test_set"><code class="docutils literal notranslate"><span class="pre">run_test_set()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-herptest.toolbox">herptest.toolbox module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.PipeSet"><code class="docutils literal notranslate"><span class="pre">PipeSet</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.SelectiveFileHandler"><code class="docutils literal notranslate"><span class="pre">SelectiveFileHandler</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.SelectiveStreamHandler"><code class="docutils literal notranslate"><span class="pre">SelectiveStreamHandler</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.ansi_to_text"><code class="docutils literal notranslate"><span class="pre">ansi_to_text()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.append_csv"><code class="docutils literal notranslate"><span class="pre">append_csv()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.can_write_property"><code class="docutils literal notranslate"><span class="pre">can_write_property()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.causes_exception"><code class="docutils literal notranslate"><span class="pre">causes_exception()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.compare_cutout"><code class="docutils literal notranslate"><span class="pre">compare_cutout()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.compare_element"><code class="docutils literal notranslate"><span class="pre">compare_element()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.compare_iterable_custom"><code class="docutils literal notranslate"><span class="pre">compare_iterable_custom()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.compare_iterable_exact"><code class="docutils literal notranslate"><span class="pre">compare_iterable_exact()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.compare_iterable_subset"><code class="docutils literal notranslate"><span class="pre">compare_iterable_subset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.compare_screen"><code class="docutils literal notranslate"><span class="pre">compare_screen()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.compare_subscreen"><code class="docutils literal notranslate"><span class="pre">compare_subscreen()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.convert_curses_capture"><code class="docutils literal notranslate"><span class="pre">convert_curses_capture()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.data_to_file"><code class="docutils literal notranslate"><span class="pre">data_to_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.find_library"><code class="docutils literal notranslate"><span class="pre">find_library()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.get_cmd_output"><code class="docutils literal notranslate"><span class="pre">get_cmd_output()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.get_cutout"><code class="docutils literal notranslate"><span class="pre">get_cutout()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.get_public_attr"><code class="docutils literal notranslate"><span class="pre">get_public_attr()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.get_public_vars"><code class="docutils literal notranslate"><span class="pre">get_public_vars()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.get_py_output"><code class="docutils literal notranslate"><span class="pre">get_py_output()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.get_subscreen"><code class="docutils literal notranslate"><span class="pre">get_subscreen()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.get_type_and_value_string"><code class="docutils literal notranslate"><span class="pre">get_type_and_value_string()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.get_value_or_error_msg"><code class="docutils literal notranslate"><span class="pre">get_value_or_error_msg()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.get_vt_output"><code class="docutils literal notranslate"><span class="pre">get_vt_output()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.is_file"><code class="docutils literal notranslate"><span class="pre">is_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.is_readonly_attribute"><code class="docutils literal notranslate"><span class="pre">is_readonly_attribute()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.is_writable_attribute"><code class="docutils literal notranslate"><span class="pre">is_writable_attribute()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.loadTempLibrary"><code class="docutils literal notranslate"><span class="pre">loadTempLibrary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.load_library"><code class="docutils literal notranslate"><span class="pre">load_library()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.load_module"><code class="docutils literal notranslate"><span class="pre">load_module()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.load_relative_module"><code class="docutils literal notranslate"><span class="pre">load_relative_module()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.match_sets"><code class="docutils literal notranslate"><span class="pre">match_sets()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.match_subset"><code class="docutils literal notranslate"><span class="pre">match_subset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.parse_tokens"><code class="docutils literal notranslate"><span class="pre">parse_tokens()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.save_csv"><code class="docutils literal notranslate"><span class="pre">save_csv()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.sed"><code class="docutils literal notranslate"><span class="pre">sed()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.text_to_file"><code class="docutils literal notranslate"><span class="pre">text_to_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.unload_library"><code class="docutils literal notranslate"><span class="pre">unload_library()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.toolbox.write_to_file"><code class="docutils literal notranslate"><span class="pre">write_to_file()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-herptest">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.Config"><code class="docutils literal notranslate"><span class="pre">Config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.TestSet"><code class="docutils literal notranslate"><span class="pre">TestSet</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#herptest.attr_has_value"><code class="docutils literal notranslate"><span class="pre">attr_has_value()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">herptest_sphinx</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">herptest</a></li>
+      <li class="breadcrumb-item active">herptest package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/herptest.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="herptest-package">
+<h1>herptest package<a class="headerlink" href="#herptest-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-herptest.extract_lms_archive">
+<span id="herptest-extract-lms-archive-module"></span><h2>herptest.extract_lms_archive module<a class="headerlink" href="#module-herptest.extract_lms_archive" title="Permalink to this heading"></a></h2>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="herptest.extract_lms_archive.Lms">
+<span class="sig-prename descclassname"><span class="pre">herptest.extract_lms_archive.</span></span><span class="sig-name descname"><span class="pre">Lms</span></span><a class="headerlink" href="#herptest.extract_lms_archive.Lms" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">LMS</span></code></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.extract_lms_archive.main">
+<span class="sig-prename descclassname"><span class="pre">herptest.extract_lms_archive.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/extract_lms_archive.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.extract_lms_archive.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-herptest.run_test_suite">
+<span id="herptest-run-test-suite-module"></span><h2>herptest.run_test_suite module<a class="headerlink" href="#module-herptest.run_test_suite" title="Permalink to this heading"></a></h2>
+<p>This is the driver source code for the <cite>herp</cite> utility to run the project test suite as specified by the user.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.run_test_suite.build_project">
+<span class="sig-prename descclassname"><span class="pre">herptest.run_test_suite.</span></span><span class="sig-name descname"><span class="pre">build_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_root</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_root</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_cfg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/run_test_suite.html#build_project"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.run_test_suite.build_project" title="Permalink to this definition"></a></dt>
+<dd><p>Builds the project that will be tests</p>
+<section id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>source_root: str</dt><dd><p>The Source directory path</p>
+</dd>
+<dt>build_root: str</dt><dd><p>The Build directory path</p>
+</dd>
+<dt>build_cfg: str</dt><dd><p>The Build directory path for the Configuration file</p>
+</dd>
+</dl>
+</section>
+<section id="return">
+<h3>Return<a class="headerlink" href="#return" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>result_error: BaseException</dt><dd><p>An error flag for any issue raised when building the project</p>
+</dd>
+<dt>error_output: str</dt><dd><p>An output message that provides further detail of the error</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.run_test_suite.main">
+<span class="sig-prename descclassname"><span class="pre">herptest.run_test_suite.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/run_test_suite.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.run_test_suite.main" title="Permalink to this definition"></a></dt>
+<dd><p>Handles the herp utility build, test, and shutdown routines</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.run_test_suite.parse_arguments">
+<span class="sig-prename descclassname"><span class="pre">herptest.run_test_suite.</span></span><span class="sig-name descname"><span class="pre">parse_arguments</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/run_test_suite.html#parse_arguments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.run_test_suite.parse_arguments" title="Permalink to this definition"></a></dt>
+<dd><p>Handles command line arguments and creates usage message</p>
+<section id="returns">
+<h3>Returns<a class="headerlink" href="#returns" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>config: argparse.Namespace</dt><dd><p>Namespace object that holds the argument context.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.run_test_suite.prepare_and_init_framework">
+<span class="sig-prename descclassname"><span class="pre">herptest.run_test_suite.</span></span><span class="sig-name descname"><span class="pre">prepare_and_init_framework</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/run_test_suite.html#prepare_and_init_framework"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.run_test_suite.prepare_and_init_framework" title="Permalink to this definition"></a></dt>
+<dd><p>Build the environment components (only need to do this once.)</p>
+<section id="id1">
+<h3>Parameters<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>cfg: Config</dt><dd><p>Test Suite Configuration that has initialized values (paths adjusted to the absolute paths)</p>
+</dd>
+</dl>
+</section>
+<section id="id2">
+<h3>Return<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>framework_data: dict</dt><dd><p>A dictionary that holds framework context values</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.run_test_suite.prepare_and_test_submission">
+<span class="sig-prename descclassname"><span class="pre">herptest.run_test_suite.</span></span><span class="sig-name descname"><span class="pre">prepare_and_test_submission</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">submission</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framework_context</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cfg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/run_test_suite.html#prepare_and_test_submission"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.run_test_suite.prepare_and_test_submission" title="Permalink to this definition"></a></dt>
+<dd><p>For each submission, copy the base files, then the submission, into the destination folder.</p>
+<section id="id3">
+<h3>Parameters<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>submission: n/a</dt><dd><p>n/a</p>
+</dd>
+<dt>framework_context: n/a</dt><dd><p>n/a</p>
+</dd>
+<dt>cfg: n/a</dt><dd><p>n/a</p>
+</dd>
+</dl>
+</section>
+<section id="id4">
+<h3>Return<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>results: n/a</dt><dd><p>n/a</p>
+</dd>
+<dt>exception_sets: n/a</dt><dd><p>n/a</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.run_test_suite.run_suite_tests">
+<span class="sig-prename descclassname"><span class="pre">herptest.run_test_suite.</span></span><span class="sig-name descname"><span class="pre">run_suite_tests</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framework</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cfg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/run_test_suite.html#run_suite_tests"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.run_test_suite.run_suite_tests" title="Permalink to this definition"></a></dt>
+<dd><p>Executes the suite of test sets</p>
+<section id="id5">
+<h3>Parameters<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>subject: n/a</dt><dd><p>Subject Context</p>
+</dd>
+<dt>framework: n/a</dt><dd><p>Framework Context</p>
+</dd>
+<dt>cfg: Config</dt><dd><p>Configuration Context</p>
+</dd>
+</dl>
+</section>
+<section id="id6">
+<h3>Return<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>results: list</dt><dd><p>A list of the test results</p>
+</dd>
+<dt>exception_sets: dict</dt><dd><p>A dictionary of exeption sets</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.run_test_suite.run_test_set">
+<span class="sig-prename descclassname"><span class="pre">herptest.run_test_suite.</span></span><span class="sig-name descname"><span class="pre">run_test_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">test_set</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framework</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cfg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/run_test_suite.html#run_test_set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.run_test_suite.run_test_set" title="Permalink to this definition"></a></dt>
+<dd><p>Executes the test set</p>
+<section id="id7">
+<h3>Parameters<a class="headerlink" href="#id7" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>test_set: TestSet</dt><dd><p>The test set configuration context</p>
+</dd>
+<dt>subject: n/a</dt><dd><p>n/a</p>
+</dd>
+<dt>framework: n/a</dt><dd><p>n/a</p>
+</dd>
+<dt>cfg: n/a</dt><dd><p>n/a</p>
+</dd>
+</dl>
+</section>
+<section id="id8">
+<h3>Return<a class="headerlink" href="#id8" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>data_set: tuple</dt><dd><p>The data set that was used to calculate the score</p>
+</dd>
+<dt>score/num_of_tests: float</dt><dd><p>The proportion of the grade score of succeeded tests</p>
+</dd>
+<dt>penalty_totals: int</dt><dd><p>The total points that will be deducted from the proportion</p>
+</dd>
+<dt>exception_list: n/a</dt><dd><p>n/a</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+<section id="module-herptest.toolbox">
+<span id="herptest-toolbox-module"></span><h2>herptest.toolbox module<a class="headerlink" href="#module-herptest.toolbox" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="herptest.toolbox.PipeSet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">PipeSet</span></span><a class="reference internal" href="_modules/herptest/toolbox.html#PipeSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.PipeSet" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class wrapping python pipes as a set to make it easier to read / write them</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.toolbox.PipeSet.print">
+<span class="sig-name descname"><span class="pre">print</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">argv</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#PipeSet.print"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.PipeSet.print" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.toolbox.PipeSet.println">
+<span class="sig-name descname"><span class="pre">println</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">argv</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#PipeSet.println"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.PipeSet.println" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.toolbox.PipeSet.read">
+<span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">maxbytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1048576</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#PipeSet.read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.PipeSet.read" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.toolbox.PipeSet.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#PipeSet.write"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.PipeSet.write" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="herptest.toolbox.SelectiveFileHandler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">SelectiveFileHandler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'a'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">keywords</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#SelectiveFileHandler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.SelectiveFileHandler" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">FileHandler</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.toolbox.SelectiveFileHandler.emit">
+<span class="sig-name descname"><span class="pre">emit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#SelectiveFileHandler.emit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.SelectiveFileHandler.emit" title="Permalink to this definition"></a></dt>
+<dd><p>Emit a record.</p>
+<p>If the stream was not opened because ‘delay’ was specified in the
+constructor, open it before calling the superclass’s emit.</p>
+<p>If stream is not open, current mode is ‘w’ and <cite>_closed=True</cite>, record
+will not be emitted (see Issue #42378).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="herptest.toolbox.SelectiveStreamHandler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">SelectiveStreamHandler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">keywords</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#SelectiveStreamHandler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.SelectiveStreamHandler" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">StreamHandler</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.toolbox.SelectiveStreamHandler.emit">
+<span class="sig-name descname"><span class="pre">emit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#SelectiveStreamHandler.emit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.SelectiveStreamHandler.emit" title="Permalink to this definition"></a></dt>
+<dd><p>Emit a record.</p>
+<p>If a formatter is specified, it is used to format the record.
+The record is then written to the stream with a trailing newline.  If
+exception information is present, it is formatted using
+traceback.print_exception and appended to the stream.  If the stream
+has an ‘encoding’ attribute, it is used to determine how to do the
+output to the stream.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.ansi_to_text">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">ansi_to_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">80</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#ansi_to_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.ansi_to_text" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.append_csv">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">append_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insert_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dialect</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'excel'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#append_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.append_csv" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.can_write_property">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">can_write_property</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">property_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#can_write_property"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.can_write_property" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.causes_exception">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">causes_exception</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">test_me</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#causes_exception"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.causes_exception" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.compare_cutout">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">compare_cutout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lhs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rhs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hollow_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hollow_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hollow_width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hollow_height</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">case_sensitive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#compare_cutout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.compare_cutout" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.compare_element">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">compare_element</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lhs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#compare_element"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.compare_element" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.compare_iterable_custom">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">compare_iterable_custom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">match_function</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lhs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#compare_iterable_custom"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.compare_iterable_custom" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.compare_iterable_exact">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">compare_iterable_exact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lhs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#compare_iterable_exact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.compare_iterable_exact" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.compare_iterable_subset">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">compare_iterable_subset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lhs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#compare_iterable_subset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.compare_iterable_subset" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.compare_screen">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">compare_screen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lhs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rhs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">case_sensitive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#compare_screen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.compare_screen" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.compare_subscreen">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">compare_subscreen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lhs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rhs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">case_sensitive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#compare_subscreen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.compare_subscreen" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.convert_curses_capture">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">convert_curses_capture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">capture</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">box_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">avoid_collisions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#convert_curses_capture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.convert_curses_capture" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.data_to_file">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">data_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#data_to_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.data_to_file" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.find_library">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">find_library</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#find_library"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.find_library" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.get_cmd_output">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">get_cmd_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">working_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">command</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_lines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#get_cmd_output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.get_cmd_output" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.get_cutout">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">get_cutout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hollow_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hollow_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hollow_width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hollow_height</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#get_cutout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.get_cutout" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.get_public_attr">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">get_public_attr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclusions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_callable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#get_public_attr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.get_public_attr" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.get_public_vars">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">get_public_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_callable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#get_public_vars"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.get_public_vars" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.get_py_output">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">get_py_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">working_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">command</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_lines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#get_py_output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.get_py_output" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.get_subscreen">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">get_subscreen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#get_subscreen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.get_subscreen" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.get_type_and_value_string">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">get_type_and_value_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#get_type_and_value_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.get_type_and_value_string" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.get_value_or_error_msg">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">get_value_or_error_msg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_function</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#get_value_or_error_msg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.get_value_or_error_msg" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.get_vt_output">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">get_vt_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">working_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">command</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_lines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">80</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">readsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#get_vt_output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.get_vt_output" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.is_file">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">is_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#is_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.is_file" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.is_readonly_attribute">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">is_readonly_attribute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#is_readonly_attribute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.is_readonly_attribute" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.is_writable_attribute">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">is_writable_attribute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#is_writable_attribute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.is_writable_attribute" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.loadTempLibrary">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">loadTempLibrary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#loadTempLibrary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.loadTempLibrary" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.load_library">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">load_library</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#load_library"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.load_library" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.load_module">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">load_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">package_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#load_module"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.load_module" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.load_relative_module">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">load_relative_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">package_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#load_relative_module"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.load_relative_module" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.match_sets">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">match_sets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">left_set</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">right_set</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#match_sets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.match_sets" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.match_subset">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">match_subset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">superset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">candidate</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#match_subset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.match_subset" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.parse_tokens">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">parse_tokens</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_case_sensitive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_string_match</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#parse_tokens"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.parse_tokens" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.save_csv">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">save_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insert_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dialect</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'excel'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#save_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.save_csv" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.sed">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">sed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pattern</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repl</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#sed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.sed" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.text_to_file">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">text_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lines</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#text_to_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.text_to_file" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.unload_library">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">unload_library</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">library</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#unload_library"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.unload_library" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.toolbox.write_to_file">
+<span class="sig-prename descclassname"><span class="pre">herptest.toolbox.</span></span><span class="sig-name descname"><span class="pre">write_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lines</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest/toolbox.html#write_to_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.toolbox.write_to_file" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-herptest">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-herptest" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="herptest.Config">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">herptest.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">runtime</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_sets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">keywords</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest.html#Config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.Config" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">MonkeyDict</span></code></p>
+<p>A class that handles generating and handling all of the <cite>Config</cite> behaviours</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.Config.initialize_framework">
+<span class="sig-name descname"><span class="pre">initialize_framework</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest.html#Config.initialize_framework"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.Config.initialize_framework" title="Permalink to this definition"></a></dt>
+<dd><p>A function that is meant to be overloaded and return the framework context [typically handled by the config.py]</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.Config.initialize_subject">
+<span class="sig-name descname"><span class="pre">initialize_subject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">submission</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framework_context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest.html#Config.initialize_subject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.Config.initialize_subject" title="Permalink to this definition"></a></dt>
+<dd><p>A function that is meant to be overloaded and return the subject context</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.Config.initialize_test_set">
+<span class="sig-name descname"><span class="pre">initialize_test_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">test_set</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subject_context</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framework_context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest.html#Config.initialize_test_set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.Config.initialize_test_set" title="Permalink to this definition"></a></dt>
+<dd><p>A function that is meant to be overloaded and return the test set context</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.Config.make_paths_absolute">
+<span class="sig-name descname"><span class="pre">make_paths_absolute</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest.html#Config.make_paths_absolute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.Config.make_paths_absolute" title="Permalink to this definition"></a></dt>
+<dd><p>Make configuration paths absolute</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.Config.shutdown_framework">
+<span class="sig-name descname"><span class="pre">shutdown_framework</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">framework_context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest.html#Config.shutdown_framework"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.Config.shutdown_framework" title="Permalink to this definition"></a></dt>
+<dd><p>A function that is meant to be overloaded and return the framework shutdown routine</p>
+<section id="id9">
+<h3>Parameters<a class="headerlink" href="#id9" title="Permalink to this heading"></a></h3>
+<p>framework_context:</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.Config.shutdown_subject">
+<span class="sig-name descname"><span class="pre">shutdown_subject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subject_context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest.html#Config.shutdown_subject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.Config.shutdown_subject" title="Permalink to this definition"></a></dt>
+<dd><p>A function that is meant to be overloaded and return the subject shutdown routine</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.Config.shutdown_test_set">
+<span class="sig-name descname"><span class="pre">shutdown_test_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">test_set_context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest.html#Config.shutdown_test_set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.Config.shutdown_test_set" title="Permalink to this definition"></a></dt>
+<dd><p>A function that is meant to be overloaded and return the test set shutdown routine</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="herptest.TestSet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">herptest.</span></span><span class="sig-name descname"><span class="pre">TestSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_tests</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_function</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">keywords</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest.html#TestSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.TestSet" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A class that handles generating and handling all of the <cite>TestSet</cite> behaviours</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.TestSet.add_case_penalty">
+<span class="sig-name descname"><span class="pre">add_case_penalty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fraction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest.html#TestSet.add_case_penalty"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.TestSet.add_case_penalty" title="Permalink to this definition"></a></dt>
+<dd><p>Add the penalty of a test case</p>
+<section id="id10">
+<h3>Parameters<a class="headerlink" href="#id10" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>name: n/a</dt><dd><p>n/a</p>
+</dd>
+<dt>fraction: n/a</dt><dd><p>n/a</p>
+</dd>
+<dt>function: n/a</dt><dd><p>n/a</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="herptest.TestSet.add_set_penalty">
+<span class="sig-name descname"><span class="pre">add_set_penalty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fraction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest.html#TestSet.add_set_penalty"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.TestSet.add_set_penalty" title="Permalink to this definition"></a></dt>
+<dd><p>Add the penalty of a test set</p>
+<section id="id11">
+<h3>Parameters<a class="headerlink" href="#id11" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>name: n/a</dt><dd><p>n/a</p>
+</dd>
+<dt>fraction: n/a</dt><dd><p>n/a</p>
+</dd>
+<dt>function: n/a</dt><dd><p>n/a</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="herptest.TestSet.case_penalties">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">case_penalties</span></span><a class="headerlink" href="#herptest.TestSet.case_penalties" title="Permalink to this definition"></a></dt>
+<dd><p>case_penalties Getter</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="herptest.TestSet.id">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">id</span></span><a class="headerlink" href="#herptest.TestSet.id" title="Permalink to this definition"></a></dt>
+<dd><p>id Getter</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="herptest.TestSet.max_penalty">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">max_penalty</span></span><a class="headerlink" href="#herptest.TestSet.max_penalty" title="Permalink to this definition"></a></dt>
+<dd><p>max_penalty Getter</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="herptest.TestSet.max_score">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">max_score</span></span><a class="headerlink" href="#herptest.TestSet.max_score" title="Permalink to this definition"></a></dt>
+<dd><p>max_score Getter</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="herptest.TestSet.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#herptest.TestSet.name" title="Permalink to this definition"></a></dt>
+<dd><p>Name Getter</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="herptest.TestSet.num_tests">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_tests</span></span><a class="headerlink" href="#herptest.TestSet.num_tests" title="Permalink to this definition"></a></dt>
+<dd><p>num_tests Getter</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="herptest.TestSet.set_penalties">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set_penalties</span></span><a class="headerlink" href="#herptest.TestSet.set_penalties" title="Permalink to this definition"></a></dt>
+<dd><p>set_penalties Getter</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="herptest.attr_has_value">
+<span class="sig-prename descclassname"><span class="pre">herptest.</span></span><span class="sig-name descname"><span class="pre">attr_has_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/herptest.html#attr_has_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#herptest.attr_has_value" title="Permalink to this definition"></a></dt>
+<dd><p>Determines if an attribute is included in a base context</p>
+<section id="id12">
+<h3>Parameters<a class="headerlink" href="#id12" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>base: n/a</dt><dd><p>n/a</p>
+</dd>
+<dt>attr_name: str</dt><dd><p>Attribute name</p>
+</dd>
+</dl>
+</section>
+<section id="id13">
+<h3>Return<a class="headerlink" href="#id13" title="Permalink to this heading"></a></h3>
+<dl class="simple">
+<dt>&lt;BOOLEAN&gt;: boolean</dt><dd><p>The result of either an attribute name is included in a context</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="herptest" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Jeremiah Blanchard, Jack, Robert, Lunafreya Nyugen, Renee Kaynor.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>herptest.toolbox &mdash; herptest_sphinx 0.9.9.16 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            herptest_sphinx
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">herptest_sphinx</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../herptest.html">herptest</a></li>
+      <li class="breadcrumb-item active">herptest.toolbox</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for herptest.toolbox</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">ctypes</span>
+<span class="kn">import</span> <span class="nn">_ctypes</span>
+<span class="kn">import</span> <span class="nn">difflib</span>
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">pexpect</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">pyte</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+
+<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">import</span> <span class="nn">importlib.util</span>
+<span class="kn">from</span> <span class="nn">ctypes</span> <span class="kn">import</span> <span class="n">util</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">path</span>
+<span class="kn">from</span> <span class="nn">numbers</span> <span class="kn">import</span> <span class="n">Number</span>
+<span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">Popen</span><span class="p">,</span> <span class="n">PIPE</span><span class="p">,</span> <span class="n">TimeoutExpired</span>
+
+<span class="n">DEFAULT_MAX_READ</span> <span class="o">=</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span>
+
+<span class="n">__ansiterm</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="PipeSet"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.PipeSet">[docs]</a><span class="k">class</span> <span class="nc">PipeSet</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class wrapping python pipes as a set to make it easier to read / write them&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pipe_in</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipe_out</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">pipe</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="PipeSet.write"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.PipeSet.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipe_out</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PipeSet.read"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.PipeSet.read">[docs]</a>    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">maxbytes</span> <span class="o">=</span> <span class="n">DEFAULT_MAX_READ</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipe_in</span><span class="p">,</span> <span class="n">maxbytes</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PipeSet.print"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.PipeSet.print">[docs]</a>    <span class="k">def</span> <span class="nf">print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">argv</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">arg</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">argv</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">arg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+
+            <span class="c1"># Add separators before argument elements except for the first element</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">message</span> <span class="o">+</span> <span class="p">((</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sep&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;sep&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="s1">&#39; &#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">arg</span>
+
+        <span class="n">message</span> <span class="o">=</span> <span class="n">message</span> <span class="o">+</span> <span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;end&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="PipeSet.println"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.PipeSet.println">[docs]</a>    <span class="k">def</span> <span class="nf">println</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">argv</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="o">*</span><span class="n">argv</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SelectiveFileHandler"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.SelectiveFileHandler">[docs]</a><span class="k">class</span> <span class="nc">SelectiveFileHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">add_level</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">keywords</span><span class="p">):</span>
+        <span class="n">LOG_ALL</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;LOG_ALL&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_CRITICAL</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;CRITICAL&quot;</span><span class="p">,</span> <span class="kc">False</span> <span class="ow">or</span> <span class="n">LOG_ALL</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ERROR</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;ERROR&quot;</span><span class="p">,</span> <span class="kc">False</span> <span class="ow">or</span> <span class="n">LOG_ALL</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_WARNING</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;WARNING&quot;</span><span class="p">,</span> <span class="kc">False</span> <span class="ow">or</span> <span class="n">LOG_ALL</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_INFO</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="kc">False</span> <span class="ow">or</span> <span class="n">LOG_ALL</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_DEBUG</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">,</span> <span class="kc">False</span> <span class="ow">or</span> <span class="n">LOG_ALL</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_level</span> <span class="o">=</span> <span class="n">add_level</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">delay</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SelectiveFileHandler.emit"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.SelectiveFileHandler.emit">[docs]</a>    <span class="k">def</span> <span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="o">==</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_CRITICAL</span> <span class="ow">or</span> \
+          <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="o">==</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ERROR</span> <span class="ow">or</span> \
+          <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="o">==</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_WARNING</span> <span class="ow">or</span> \
+          <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="o">==</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_INFO</span> <span class="ow">or</span> \
+          <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="o">==</span> <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_DEBUG</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_level</span><span class="p">:</span>
+                <span class="n">record</span><span class="o">.</span><span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="p">,</span> <span class="n">record</span><span class="o">.</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SelectiveStreamHandler"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.SelectiveStreamHandler">[docs]</a><span class="k">class</span> <span class="nc">SelectiveStreamHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">add_level</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">keywords</span><span class="p">):</span>
+        <span class="n">LOG_ALL</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;LOG_ALL&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_CRITICAL</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;CRITICAL&quot;</span><span class="p">,</span> <span class="kc">False</span> <span class="ow">or</span> <span class="n">LOG_ALL</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ERROR</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;ERROR&quot;</span><span class="p">,</span> <span class="kc">False</span> <span class="ow">or</span> <span class="n">LOG_ALL</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_WARNING</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;WARNING&quot;</span><span class="p">,</span> <span class="kc">False</span> <span class="ow">or</span> <span class="n">LOG_ALL</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_INFO</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="kc">False</span> <span class="ow">or</span> <span class="n">LOG_ALL</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_DEBUG</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">,</span> <span class="kc">False</span> <span class="ow">or</span> <span class="n">LOG_ALL</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_level</span> <span class="o">=</span> <span class="n">add_level</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SelectiveStreamHandler.emit"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.SelectiveStreamHandler.emit">[docs]</a>    <span class="k">def</span> <span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="o">==</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_CRITICAL</span> <span class="ow">or</span> \
+          <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="o">==</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ERROR</span> <span class="ow">or</span> \
+          <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="o">==</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_WARNING</span> <span class="ow">or</span> \
+          <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="o">==</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_INFO</span> <span class="ow">or</span> \
+          <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="o">==</span> <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_DEBUG</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_level</span><span class="p">:</span>
+                <span class="n">record</span><span class="o">.</span><span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="p">,</span> <span class="n">record</span><span class="o">.</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="data_to_file"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.data_to_file">[docs]</a><span class="k">def</span> <span class="nf">data_to_file</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;wb+&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">my_file</span><span class="p">:</span>
+        <span class="n">my_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">my_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="text_to_file"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.text_to_file">[docs]</a><span class="k">def</span> <span class="nf">text_to_file</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w+&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">my_file</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="n">my_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">my_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<span class="c1">#TODO: Deprecated; repllace with &quot;text_to_file&quot;</span>
+<div class="viewcode-block" id="write_to_file"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.write_to_file">[docs]</a><span class="k">def</span> <span class="nf">write_to_file</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+    <span class="n">text_to_file</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+
+
+    <span class="n">start_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">working_dir</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="load_relative_module"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.load_relative_module">[docs]</a><span class="k">def</span> <span class="nf">load_relative_module</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">neighbor</span><span class="p">,</span> <span class="n">package_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">target</span><span class="p">):</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">neighbor</span><span class="p">)),</span> <span class="n">target</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">load_module</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">package_name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load_module"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.load_module">[docs]</a><span class="k">def</span> <span class="nf">load_module</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">package_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">start_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="n">mod_dir</span><span class="p">,</span> <span class="n">mod_file</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;./&#39;</span><span class="p">)</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">mod_dir</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">mod_dir</span><span class="p">)</span>
+
+        <span class="n">module_name</span> <span class="o">=</span> <span class="p">(</span><span class="n">package_name</span> <span class="k">if</span> <span class="n">package_name</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">mod_file</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">mod_file</span><span class="p">)</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+        <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s2">&quot;: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s2">&quot;: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">start_dir</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;./&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">module</span></div>
+
+
+<div class="viewcode-block" id="is_file"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.is_file">[docs]</a><span class="k">def</span> <span class="nf">is_file</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">filename</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="find_library"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.find_library">[docs]</a><span class="k">def</span> <span class="nf">find_library</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">(</span><span class="n">util</span><span class="o">.</span><span class="n">find_library</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span> <span class="ow">or</span>
+              <span class="n">util</span><span class="o">.</span><span class="n">find_library</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span> <span class="ow">or</span>
+              <span class="n">util</span><span class="o">.</span><span class="n">find_library</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="s2">&quot;lib&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">))</span> <span class="ow">or</span>
+              <span class="n">util</span><span class="o">.</span><span class="n">find_library</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;lib&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">))</span> <span class="ow">or</span>
+              <span class="n">util</span><span class="o">.</span><span class="n">find_library</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="s2">&quot;lib&quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;.so&#39;</span><span class="p">))</span> <span class="ow">or</span>
+              <span class="n">util</span><span class="o">.</span><span class="n">find_library</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;lib&quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;.so&#39;</span><span class="p">)))</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">result</span> <span class="ow">or</span>
+        <span class="n">is_file</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span> <span class="ow">or</span>
+        <span class="n">is_file</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span> <span class="ow">or</span>
+        <span class="n">is_file</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="s2">&quot;lib&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">))</span> <span class="ow">or</span>
+        <span class="n">is_file</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;lib&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">))</span> <span class="ow">or</span>
+        <span class="n">is_file</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="s2">&quot;lib&quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;.so&#39;</span><span class="p">))</span> <span class="ow">or</span>
+        <span class="n">is_file</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;lib&quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;.so&#39;</span><span class="p">)))</span></div>
+
+
+<span class="c1"># Hack: To get Python to load a DLL temporarily - so that it can be replaced later - we need to load a different name.</span>
+<span class="c1"># To do this, we&#39;ll make a copy of the library, load it, then dispense with it when we&#39;re done.</span>
+<div class="viewcode-block" id="loadTempLibrary"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.loadTempLibrary">[docs]</a><span class="k">def</span> <span class="nf">loadTempLibrary</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="n">libPath</span> <span class="o">=</span> <span class="n">find_library</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">or</span> <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;lib&quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;.so&#39;</span><span class="p">)</span>
+    <span class="n">hexHash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">libPath</span><span class="p">,</span><span class="s1">&#39;rb&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+
+    <span class="c1"># Create a temporary file, based on the MD5 hash, that is a copy of the target library, and load it.</span>
+    <span class="n">libTemp</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(),</span> <span class="n">hexHash</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">+</span> <span class="n">shutil</span><span class="o">.</span><span class="n">_basename</span><span class="p">(</span><span class="n">libPath</span><span class="p">))</span>
+    <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">libPath</span><span class="p">,</span> <span class="n">libTemp</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">cdll</span><span class="o">.</span><span class="n">LoadLibrary</span><span class="p">(</span><span class="n">libTemp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load_library"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.load_library">[docs]</a><span class="k">def</span> <span class="nf">load_library</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="n">libPath</span> <span class="o">=</span> <span class="n">find_library</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">or</span> <span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="s2">&quot;lib&quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;.so&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">CDLL</span><span class="p">(</span><span class="n">libPath</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">ctypes</span><span class="o">.</span><span class="n">RTLD_GLOBAL</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="unload_library"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.unload_library">[docs]</a><span class="k">def</span> <span class="nf">unload_library</span><span class="p">(</span><span class="n">library</span><span class="p">):</span>
+    <span class="k">if</span> <span class="s2">&quot;FreeLibrary&quot;</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">_ctypes</span><span class="p">):</span>
+        <span class="n">_ctypes</span><span class="o">.</span><span class="n">FreeLibrary</span><span class="p">(</span><span class="n">library</span><span class="o">.</span><span class="n">_handle</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">_ctypes</span><span class="o">.</span><span class="n">dlclose</span><span class="p">(</span><span class="n">library</span><span class="o">.</span><span class="n">_handle</span><span class="p">)</span></div>
+
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Perform the pure-Python equivalent of in-place `sed` substitution: e.g.,</span>
+<span class="sd">`sed -i -e &#39;s/&#39;${pattern}&#39;/&#39;${repl}&#39; &quot;${filename}&quot;`.</span>
+
+<span class="sd">by Cecil Curry (https://stackoverflow.com/questions/4427542/how-to-do-sed-like-text-replace-with-python)</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="sed"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.sed">[docs]</a><span class="k">def</span> <span class="nf">sed</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">repl</span><span class="p">):</span>
+    <span class="c1"># For efficiency, precompile the passed regular expression.</span>
+    <span class="n">pattern_compiled</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
+
+    <span class="c1"># For portability, NamedTemporaryFile() defaults to mode &quot;w+b&quot; (i.e., binary writing with updating).</span>
+    <span class="c1"># This is usually a good thing. In this case, however, binary writing imposes non-trivial encoding</span>
+    <span class="c1"># constraints trivially resolved by switching to text writing. Let&#39;s do that.</span>
+    <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">tmp_file</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">src_file</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">src_file</span><span class="p">:</span>
+                <span class="n">tmp_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">pattern_compiled</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">repl</span><span class="p">,</span> <span class="n">line</span><span class="p">))</span>
+
+    <span class="c1"># Overwrite the original file with the munged temporary file in a manner preserving file attributes.</span>
+    <span class="n">shutil</span><span class="o">.</span><span class="n">copystat</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">tmp_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">tmp_file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span></div>
+
+
+<span class="c1"># NOTE: If avoid_collisions is True, returns non-CP437 box characters to avoid collisions with 8-bit encodings.</span>
+<div class="viewcode-block" id="convert_curses_capture"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.convert_curses_capture">[docs]</a><span class="k">def</span> <span class="nf">convert_curses_capture</span><span class="p">(</span><span class="n">capture</span><span class="p">,</span> <span class="n">text_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">box_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">avoid_collisions</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">converted</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">box_chars</span> <span class="o">=</span> <span class="s2">&quot;┍┑┕┙━┃&quot;</span> <span class="k">if</span> <span class="n">avoid_collisions</span> <span class="k">else</span> <span class="s2">&quot;┌┐└┘─│&quot;</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;((lq+k)|(mqq+j)|(qqqqq+))&quot;</span><span class="p">)</span> <span class="c1"># Matches strings that are likely boxes (don&#39;t occur in language)</span>
+    <span class="n">curses_to_box</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">maketrans</span><span class="p">(</span><span class="s2">&quot;lkmjqx&quot;</span><span class="p">,</span> <span class="n">box_chars</span><span class="p">)</span> <span class="c1"># These are stand-in chars and cannot occur in CP437.</span>
+<span class="c1">#    box_to_cp437 = str.maketrans(box_chars, &quot;┌┐└┘─│&quot;) # Convert non-CP437 variant to CP437 variant. (Needed?)</span>
+<span class="c1">#    box_to_space = str.maketrans(box_chars,&quot;      &quot;) # Convert boxes to spaces (Needed?)</span>
+
+    <span class="c1"># Find matches to known box sequences.</span>
+    <span class="n">matches</span> <span class="o">=</span> <span class="p">[(</span><span class="n">line</span><span class="p">,</span> <span class="p">[</span><span class="n">match</span><span class="o">.</span><span class="n">span</span><span class="p">()</span> <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">pattern</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">line</span><span class="p">)])</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">capture</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">line</span><span class="p">,</span> <span class="n">match_set</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">:</span>
+        <span class="nb">next</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">line_set</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">match_set</span><span class="p">:</span>
+            <span class="c1"># If there are any characters before the match that we haven&#39;t added yet to our string set, add them now.</span>
+            <span class="k">if</span> <span class="n">start</span> <span class="o">!=</span> <span class="nb">next</span><span class="p">:</span>
+                <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="nb">next</span><span class="p">:</span><span class="n">start</span><span class="p">])</span>
+
+            <span class="c1"># Convert to analogous (but not identical) box characters; these variants do not occur in CP437.</span>
+            <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="n">curses_to_box</span><span class="p">))</span>
+            <span class="nb">next</span> <span class="o">=</span> <span class="n">end</span>
+
+        <span class="k">if</span> <span class="nb">next</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+            <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="nb">next</span><span class="p">:])</span>
+        <span class="n">converted</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">line_set</span><span class="p">))</span>
+
+    <span class="c1"># Next, find characters that might be matches, and triangulate using already converted characters.</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;[lkmjqx]&quot;</span><span class="p">)</span>
+    <span class="n">matches</span> <span class="o">=</span> <span class="p">[[</span><span class="n">match</span><span class="o">.</span><span class="n">span</span><span class="p">()</span> <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">pattern</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">line</span><span class="p">)]</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">converted</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">line_no</span><span class="p">,</span> <span class="n">match_set</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">matches</span><span class="p">):</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="p">]</span>
+        <span class="nb">next</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">line_set</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">match_set</span><span class="p">:</span>
+        <span class="c1"># If there are any characters before the match that we haven&#39;t added yet to our string set, add them now.</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">!=</span> <span class="nb">next</span><span class="p">:</span>
+                <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="nb">next</span><span class="p">:</span><span class="n">index</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;l&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">index</span><span class="o">+</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;━&quot;</span><span class="p">:</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;┍&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">converted</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">line_no</span><span class="o">+</span><span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">index</span> <span class="ow">and</span> <span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;┃&quot;</span><span class="p">:</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;┍&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;l&quot;</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;k&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;━&quot;</span><span class="p">:</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;┑&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">converted</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">line_no</span><span class="o">+</span><span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">index</span> <span class="ow">and</span> <span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;┃&quot;</span><span class="p">:</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;┑&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;k&quot;</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;m&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">index</span><span class="o">+</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;━&quot;</span><span class="p">:</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;┕&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">line_no</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">index</span> <span class="ow">and</span> <span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;┃&quot;</span><span class="p">:</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;┕&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;j&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;━&quot;</span><span class="p">:</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;┙&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">line_no</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">index</span> <span class="ow">and</span> <span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;┃&quot;</span><span class="p">:</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;┙&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;j&quot;</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;q&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;━&quot;</span> <span class="ow">or</span> <span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;┕&quot;</span> <span class="ow">or</span> <span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;┍&quot;</span><span class="p">):</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;━&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">index</span><span class="o">+</span><span class="mi">1</span> <span class="ow">and</span> <span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;━&quot;</span> <span class="ow">or</span> <span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;┙&quot;</span> <span class="ow">or</span> <span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;┑&quot;</span><span class="p">):</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;━&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;q&quot;</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">line</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">line_no</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">index</span> <span class="ow">and</span> <span class="p">(</span><span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;┃&quot;</span> <span class="ow">or</span> <span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;┍&quot;</span> <span class="ow">or</span> <span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;┑&quot;</span><span class="p">):</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;┃&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">converted</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">line_no</span><span class="o">+</span><span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">index</span> <span class="ow">and</span> <span class="p">(</span><span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;┃&quot;</span> <span class="ow">or</span> <span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;┕&quot;</span> <span class="ow">or</span> <span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;┙&quot;</span><span class="p">):</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;┃&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
+
+            <span class="nb">next</span> <span class="o">=</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="c1"># Finish construction of final line (if necessary) and merge lines into single string again.</span>
+        <span class="k">if</span> <span class="nb">next</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+            <span class="n">line_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="nb">next</span><span class="p">:])</span>
+        <span class="n">converted</span><span class="p">[</span><span class="n">line_no</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">line_set</span><span class="p">)</span>
+
+        <span class="c1"># If flags set, grab either only the text or only the box characters.</span>
+        <span class="k">if</span> <span class="n">text_only</span><span class="p">:</span>
+            <span class="n">converted</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot; &quot;</span> <span class="k">if</span> <span class="n">character</span> <span class="ow">in</span> <span class="n">box_chars</span> <span class="k">else</span> <span class="n">character</span> <span class="k">for</span> <span class="n">character</span> <span class="ow">in</span> <span class="n">converted</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">box_only</span><span class="p">:</span>
+            <span class="n">converted</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">character</span> <span class="k">if</span> <span class="n">character</span> <span class="ow">in</span> <span class="n">box_chars</span> <span class="k">else</span> <span class="s2">&quot; &quot;</span> <span class="k">for</span> <span class="n">character</span> <span class="ow">in</span> <span class="n">converted</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">converted</span></div>
+
+
+<div class="viewcode-block" id="causes_exception"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.causes_exception">[docs]</a><span class="k">def</span> <span class="nf">causes_exception</span><span class="p">(</span><span class="n">test_me</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">test_me</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<span class="c1"># TODO: Deprecate - replace with &#39;is_writable_attribute&#39;</span>
+<div class="viewcode-block" id="can_write_property"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.can_write_property">[docs]</a><span class="k">def</span> <span class="nf">can_write_property</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">property_name</span><span class="p">,</span> <span class="n">test_value</span><span class="p">):</span>
+<span class="c1">#    return causes_exception(lambda: exec(&quot;target.&quot; + property_name + &quot; = test_value&quot;))</span>
+    <span class="k">return</span> <span class="ow">not</span> <span class="n">causes_exception</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">v</span><span class="o">=</span><span class="n">test_value</span><span class="p">:</span> <span class="n">exec</span><span class="p">(</span><span class="s2">&quot;t.&quot;</span> <span class="o">+</span> <span class="n">property_name</span> <span class="o">+</span> <span class="s2">&quot; = v&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="is_writable_attribute"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.is_writable_attribute">[docs]</a><span class="k">def</span> <span class="nf">is_writable_attribute</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">test_value</span><span class="p">):</span>
+<span class="c1">#    return causes_exception(lambda t=target, v=test_value: exec(&quot;t.&quot; + attr_name + &quot; = v&quot;))</span>
+    <span class="k">return</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">causes_exception</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">v</span><span class="o">=</span><span class="n">test_value</span><span class="p">:</span> <span class="n">exec</span><span class="p">(</span><span class="s2">&quot;t.&quot;</span> <span class="o">+</span> <span class="n">attr_name</span> <span class="o">+</span> <span class="s2">&quot; = v&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="is_readonly_attribute"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.is_readonly_attribute">[docs]</a><span class="k">def</span> <span class="nf">is_readonly_attribute</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">test_value</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span> <span class="ow">and</span> <span class="n">causes_exception</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">v</span><span class="o">=</span><span class="n">test_value</span><span class="p">:</span> <span class="n">exec</span><span class="p">(</span><span class="s2">&quot;t.&quot;</span> <span class="o">+</span> <span class="n">attr_name</span> <span class="o">+</span> <span class="s2">&quot; = v&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="get_public_attr"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.get_public_attr">[docs]</a><span class="k">def</span> <span class="nf">get_public_attr</span><span class="p">(</span><span class="n">classtype</span><span class="p">,</span> <span class="n">exclusions</span><span class="o">=</span><span class="p">[],</span> <span class="n">filter_callable</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">key_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">classtype</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)]</span> <span class="c1"># Not protected/private</span>
+    <span class="n">key_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">key_list</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">classtype</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">key</span><span class="p">])</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="n">exclusions</span><span class="p">]</span> <span class="c1"># Not excluded</span>
+    <span class="k">if</span> <span class="n">filter_callable</span><span class="p">:</span>
+        <span class="n">key_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">key_list</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">classtype</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">key</span><span class="p">])]</span> <span class="c1"># Keep non-callable</span>
+    <span class="k">return</span> <span class="n">key_list</span></div>
+
+
+<div class="viewcode-block" id="get_public_vars"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.get_public_vars">[docs]</a><span class="k">def</span> <span class="nf">get_public_vars</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">filter_callable</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">var_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">entry</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">target</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">filter_callable</span><span class="p">:</span>
+        <span class="n">var_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">var_list</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="nb">vars</span><span class="p">(</span><span class="n">target</span><span class="p">)[</span><span class="n">key</span><span class="p">])]</span>
+    <span class="k">return</span> <span class="n">var_list</span></div>
+
+
+<div class="viewcode-block" id="save_csv"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.save_csv">[docs]</a><span class="k">def</span> <span class="nf">save_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">row_data</span><span class="p">,</span> <span class="n">insert_key</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">dialect</span> <span class="o">=</span> <span class="s1">&#39;excel&#39;</span><span class="p">):</span>
+    <span class="c1"># Open file for writing</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">newline</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">csvFile</span><span class="p">:</span>
+        <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">csvFile</span><span class="p">,</span> <span class="n">dialect</span><span class="p">,</span> <span class="n">quotechar</span><span class="o">=</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Write the data</span>
+        <span class="k">if</span> <span class="n">insert_key</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">row_data</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">Number</span><span class="p">)</span> <span class="k">else</span> <span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">key</span> <span class="p">]</span> <span class="o">+</span> <span class="n">row</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">row_data</span><span class="p">:</span>
+                <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">Number</span><span class="p">)</span> <span class="k">else</span> <span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">row</span><span class="p">)</span>
+
+        <span class="n">csvFile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="append_csv"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.append_csv">[docs]</a><span class="k">def</span> <span class="nf">append_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">row_data</span><span class="p">,</span> <span class="n">insert_key</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">dialect</span> <span class="o">=</span> <span class="s1">&#39;excel&#39;</span><span class="p">):</span>
+    <span class="c1"># Open file for appending</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">newline</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">csvFile</span><span class="p">:</span>
+        <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">csvFile</span><span class="p">,</span> <span class="n">dialect</span><span class="p">,</span> <span class="n">quotechar</span><span class="o">=</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Write the data</span>
+        <span class="k">if</span> <span class="n">insert_key</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">row_data</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">Number</span><span class="p">)</span> <span class="k">else</span> <span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">key</span> <span class="p">]</span> <span class="o">+</span> <span class="n">row</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">row_data</span><span class="p">:</span>
+                <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">Number</span><span class="p">)</span> <span class="k">else</span> <span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">row</span><span class="p">)</span>
+
+        <span class="n">csvFile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<span class="c1"># Formats input as list of (delay, string) pairs</span>
+<span class="k">def</span> <span class="nf">_prep_input</span><span class="p">(</span><span class="nb">input</span><span class="p">):</span>
+    <span class="c1"># If the input is just a string, return a simple string</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">input</span><span class="p">)]</span>
+    <span class="c1"># If it isn&#39;t iterable, try to convert it to a string and pass as input.</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="s1">&#39;__iter__&#39;</span><span class="p">):</span>
+       <span class="k">return</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="p">))]</span>
+
+    <span class="c1"># DEPRECATED CASE: If the list is solely and only a list of strings, concatenate them using new line chars.</span>
+    <span class="n">all_strings</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="nb">input</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="n">all_strings</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">break</span>
+    <span class="k">if</span> <span class="n">all_strings</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">input</span><span class="p">))]</span>
+
+    <span class="c1"># Finally, if it is iterable (and not the special case), go through each element.</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="nb">input</span><span class="p">:</span>
+        <span class="c1"># If this is a (int, object) tuple, get the delay and object serving as input.</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="o">==</span> <span class="nb">tuple</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="n">delay</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># Otherwise, add a delay of zero and make the entry the value.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">delay</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">entry</span>
+        <span class="c1"># Try to convert the value into a string; if that fails, use a placeholder.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="s2">&quot;Unconvertible-</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">value</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="c1"># Finally, append to the result list.</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">delay</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+
+    <span class="c1"># Return the result list.</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+
+<span class="k">def</span> <span class="nf">_convert_type</span><span class="p">(</span><span class="n">targetType</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">targetType</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="parse_tokens"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.parse_tokens">[docs]</a><span class="k">def</span> <span class="nf">parse_tokens</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">is_case_sensitive</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">number_string_match</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">tokens</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+        <span class="c1"># Get a list of punctuation marks except radix and hyphen/minus so we can remove them.</span>
+        <span class="n">punctuation</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">punctuation</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="nb">str</span><span class="o">.</span><span class="n">maketrans</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;.-&#39;</span><span class="p">))</span>
+        <span class="n">punc_to_space</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">maketrans</span><span class="p">(</span><span class="n">punctuation</span><span class="p">,</span> <span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">punctuation</span><span class="p">))</span>
+        <span class="n">radix_dash_to_space</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">maketrans</span><span class="p">(</span><span class="s1">&#39;.-&#39;</span><span class="p">,</span> <span class="s1">&#39;  &#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_case_sensitive</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="n">punc_to_space</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+            <span class="n">token</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="c1"># If this isn&#39;t a float, replace periods with space.</span>
+            <span class="k">if</span> <span class="n">_convert_type</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">tokens</span> <span class="o">+=</span> <span class="p">[</span><span class="n">entry</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">token</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="n">radix_dash_to_space</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">number_string_match</span><span class="p">:</span>
+                  <span class="n">tokens</span> <span class="o">+=</span> <span class="p">[</span><span class="n">token</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                  <span class="k">if</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">token</span><span class="p">))</span> <span class="o">==</span> <span class="nb">float</span><span class="p">(</span><span class="n">token</span><span class="p">):</span>
+                    <span class="n">tokens</span> <span class="o">+=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">token</span><span class="p">)))]</span>
+                  <span class="k">else</span><span class="p">:</span>
+                    <span class="n">tokens</span> <span class="o">+=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">token</span><span class="p">))]</span>
+
+        <span class="k">if</span> <span class="n">tokens</span><span class="p">:</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">return</span> <span class="n">output</span></div>
+
+
+<div class="viewcode-block" id="get_value_or_error_msg"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.get_value_or_error_msg">[docs]</a><span class="k">def</span> <span class="nf">get_value_or_error_msg</span><span class="p">(</span><span class="n">target_function</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">target_function</span><span class="p">(</span><span class="o">*</span><span class="n">params</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">e</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span></div>
+
+
+<div class="viewcode-block" id="get_type_and_value_string"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.get_type_and_value_string">[docs]</a><span class="k">def</span> <span class="nf">get_type_and_value_string</span><span class="p">(</span><span class="n">target</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">target</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s2">&quot;: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">target</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ansi_to_text"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.ansi_to_text">[docs]</a><span class="k">def</span> <span class="nf">ansi_to_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">lines</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="mi">80</span><span class="p">):</span>
+<span class="c1">#, convert_glyphs=True):</span>
+    <span class="n">screen</span> <span class="o">=</span> <span class="n">pyte</span><span class="o">.</span><span class="n">Screen</span><span class="p">(</span><span class="n">columns</span><span class="p">,</span> <span class="n">lines</span><span class="p">)</span>
+    <span class="n">stream</span> <span class="o">=</span> <span class="n">pyte</span><span class="o">.</span><span class="n">Stream</span><span class="p">(</span><span class="n">screen</span><span class="p">)</span>
+    <span class="n">stream</span><span class="o">.</span><span class="n">use_utf8</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">stream</span><span class="o">.</span><span class="n">feed</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">screen</span><span class="o">.</span><span class="n">display</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_vt_output"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.get_vt_output">[docs]</a><span class="k">def</span> <span class="nf">get_vt_output</span><span class="p">(</span><span class="n">working_dir</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">proc_input</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="n">tokenize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">keep_lines</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sleep</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">lines</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span> <span class="n">readsize</span><span class="o">=</span><span class="mi">1000000</span><span class="p">):</span>
+    <span class="c1"># Process the input on the front end.</span>
+    <span class="n">proc_input</span> <span class="o">=</span> <span class="n">_prep_input</span><span class="p">(</span><span class="n">proc_input</span><span class="p">)</span>
+
+    <span class="c1"># Ugly hack to make sure the window size is big enough (ugh).</span>
+    <span class="n">old_rows</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;LINES&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;LINES&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span> <span class="k">else</span> <span class="s2">&quot;25&quot;</span>
+    <span class="n">old_cols</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;COLUMNS&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;COLUMNS&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span> <span class="k">else</span> <span class="s2">&quot;80&quot;</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;LINES&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;COLUMNS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
+
+    <span class="c1"># Grab the current working directory, then change to the target directory.</span>
+    <span class="n">start_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">working_dir</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Start the process, get the output, and return to the original directory.</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">pexpect</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="n">command</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">command</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">delay</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">proc_input</span><span class="p">:</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+            <span class="n">process</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+
+        <span class="c1"># Give the program enough time to update, then pull the data</span>
+        <span class="k">if</span> <span class="n">sleep</span><span class="p">:</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="n">process</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">read_nonblocking</span><span class="p">(</span><span class="n">readsize</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+        <span class="n">process</span><span class="o">.</span><span class="n">terminate</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">raw</span><span class="p">:</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">ansi_to_text</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">lines</span><span class="p">,</span> <span class="n">columns</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">stack_trace</span> <span class="o">=</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">stack_trace</span><span class="p">))</span>
+
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">start_dir</span><span class="p">)</span>
+
+        <span class="c1"># Restore the terminal size variables.</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;LINES&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">old_rows</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;COLUMNS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">old_cols</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">raw</span> <span class="ow">and</span> <span class="n">tokenize</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">parse_tokens</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">keep_lines</span><span class="p">:</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">results</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">results</span></div>
+
+
+<span class="c1">##### CONSOLE OUTPUT COMMAND PROCESSING #####</span>
+<div class="viewcode-block" id="get_py_output"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.get_py_output">[docs]</a><span class="k">def</span> <span class="nf">get_py_output</span><span class="p">(</span><span class="n">working_dir</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="n">tokenize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">keep_lines</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="n">command</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">command</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="s1">&#39;__iter__&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">command</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">get_cmd_output</span><span class="p">(</span><span class="n">working_dir</span><span class="p">,</span> <span class="p">[</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">]</span> <span class="o">+</span> <span class="n">command</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="n">tokenize</span><span class="p">,</span> <span class="n">keep_lines</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_cmd_output"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.get_cmd_output">[docs]</a><span class="k">def</span> <span class="nf">get_cmd_output</span><span class="p">(</span><span class="n">working_dir</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">proc_input</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="n">tokenize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">keep_lines</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="c1"># Format the input, grab the current working directory, then change to the target directory.</span>
+    <span class="n">proc_input</span> <span class="o">=</span> <span class="n">_prep_input</span><span class="p">(</span><span class="n">proc_input</span><span class="p">)</span>
+    <span class="n">start_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">working_dir</span><span class="p">)</span>
+
+    <span class="c1"># Start the process, send input, and gather output.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># First, start the process; then, after the designated delay, send the data.</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">Popen</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stdin</span><span class="o">=</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">delay</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">proc_input</span><span class="p">:</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+            <span class="n">process</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">entry</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">process</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+        <span class="c1"># After all input has been sent, if the process has not quit, wait - and kill if necessary.</span>
+        <span class="k">if</span> <span class="n">process</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">TimeoutExpired</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">process</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+
+        <span class="c1"># Gather the output of the process.</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">communicate</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+    <span class="c1"># Return to the original directory.</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">start_dir</span><span class="p">)</span>
+
+    <span class="c1"># Format the return data, as appropriate.</span>
+    <span class="k">if</span> <span class="n">tokenize</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">parse_tokens</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">keep_lines</span><span class="p">:</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">results</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">results</span></div>
+
+
+<span class="c1">##### MATCHING FUNCTIONS #######</span>
+<div class="viewcode-block" id="match_sets"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.match_sets">[docs]</a><span class="k">def</span> <span class="nf">match_sets</span><span class="p">(</span><span class="n">left_set</span><span class="p">,</span> <span class="n">right_set</span><span class="p">):</span>
+    <span class="n">matched</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">left_set</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">right_set</span><span class="p">))</span>
+
+    <span class="n">seq</span> <span class="o">=</span> <span class="n">difflib</span><span class="o">.</span><span class="n">SequenceMatcher</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">left_set</span><span class="p">,</span> <span class="n">right_set</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">seq</span><span class="o">.</span><span class="n">get_matching_blocks</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+            <span class="n">matched</span><span class="p">[</span><span class="n">a</span> <span class="o">+</span> <span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span> <span class="o">+</span> <span class="n">index</span>
+
+    <span class="k">return</span> <span class="n">matched</span></div>
+
+
+<div class="viewcode-block" id="match_subset"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.match_subset">[docs]</a><span class="k">def</span> <span class="nf">match_subset</span><span class="p">(</span><span class="n">superset</span><span class="p">,</span> <span class="n">candidate</span><span class="p">):</span>
+    <span class="n">matched</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidate</span><span class="p">)</span>
+
+    <span class="n">seq</span> <span class="o">=</span> <span class="n">difflib</span><span class="o">.</span><span class="n">SequenceMatcher</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">candidate</span><span class="p">,</span> <span class="n">superset</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">seq</span><span class="o">.</span><span class="n">get_matching_blocks</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+            <span class="n">matched</span><span class="p">[</span><span class="n">a</span> <span class="o">+</span> <span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span> <span class="o">+</span> <span class="n">index</span>
+
+    <span class="k">return</span> <span class="n">matched</span></div>
+
+
+<span class="c1">##### RESULT COMPARATORS #####</span>
+<div class="viewcode-block" id="compare_element"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.compare_element">[docs]</a><span class="k">def</span> <span class="nf">compare_element</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">lhs</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="compare_iterable_exact"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.compare_iterable_exact">[docs]</a><span class="k">def</span> <span class="nf">compare_iterable_exact</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">compare_iterable_custom</span><span class="p">(</span><span class="n">match_sets</span><span class="p">,</span> <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compare_iterable_subset"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.compare_iterable_subset">[docs]</a><span class="k">def</span> <span class="nf">compare_iterable_subset</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">compare_iterable_custom</span><span class="p">(</span><span class="n">match_subset</span><span class="p">,</span> <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compare_iterable_custom"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.compare_iterable_custom">[docs]</a><span class="k">def</span> <span class="nf">compare_iterable_custom</span><span class="p">(</span><span class="n">match_function</span><span class="p">,</span> <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+    <span class="c1"># Get match results and do a basic comparison. We&#39;ll need 100% match.</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">match_function</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">entry</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="k">return</span> <span class="mi">1</span></div>
+
+
+<span class="c1"># Get screen dimensions</span>
+<span class="k">def</span> <span class="nf">__get_screen_dimensions</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+
+
+<span class="c1"># Returns true i the position is in the range, and false otherwise.</span>
+<span class="k">def</span> <span class="nf">__pos_in_range</span><span class="p">(</span><span class="n">pos_x</span><span class="p">,</span> <span class="n">pos_y</span><span class="p">,</span> <span class="n">start_x</span><span class="p">,</span> <span class="n">start_y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">pos_x</span> <span class="o">&gt;=</span> <span class="n">start_x</span> <span class="ow">and</span> <span class="n">pos_x</span> <span class="o">&lt;</span> <span class="n">start_x</span> <span class="o">+</span> <span class="n">width</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">pos_y</span> <span class="o">&gt;=</span> <span class="n">start_y</span> <span class="ow">and</span> <span class="n">pos_y</span> <span class="o">&lt;</span> <span class="n">start_y</span> <span class="o">+</span> <span class="n">height</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="c1"># Changes dimensions, if necessary, to fit within the bounds of a screen.</span>
+<span class="k">def</span> <span class="nf">__adjust_dimensions</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">):</span>
+    <span class="n">screen_height</span><span class="p">,</span> <span class="n">screen_width</span> <span class="o">=</span> <span class="n">__get_screen_dimensions</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+    <span class="c1"># Make sure the x/y positions are within the range of the screen</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">width</span> <span class="o">+=</span> <span class="n">x</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">elif</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="n">screen_width</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">screen_width</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">height</span> <span class="o">+=</span> <span class="n">y</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">elif</span> <span class="n">y</span> <span class="o">&gt;=</span> <span class="n">screen_height</span><span class="p">:</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">screen_height</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">height</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># Ensure that the ending x/y positions are within the range of the screen</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="o">+</span> <span class="n">width</span> <span class="o">&gt;</span> <span class="n">screen_width</span><span class="p">:</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="n">screen_width</span> <span class="o">-</span> <span class="n">x</span>
+    <span class="k">if</span> <span class="n">y</span> <span class="o">+</span> <span class="n">height</span> <span class="o">&gt;</span> <span class="n">screen_height</span><span class="p">:</span>
+        <span class="n">height</span> <span class="o">=</span> <span class="n">screen_height</span> <span class="o">-</span> <span class="n">y</span>
+
+    <span class="n">width</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">width</span><span class="p">)</span>
+    <span class="n">height</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span>
+
+
+<span class="c1"># Get a subscreen of a larger screen</span>
+<div class="viewcode-block" id="get_subscreen"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.get_subscreen">[docs]</a><span class="k">def</span> <span class="nf">get_subscreen</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">):</span>
+    <span class="c1"># Get the screen in row, col format if it isn&#39;t already.</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="s1">&#39;__iter__&#39;</span><span class="p">):</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)):</span>
+        <span class="n">text</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+
+    <span class="c1"># Fix the dimensions if any of them are out of bounds.</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">__adjust_dimensions</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+
+    <span class="c1"># Grab the subscreen and return it.</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">text</span><span class="p">[</span><span class="n">y_pos</span><span class="p">][</span><span class="n">x_pos</span><span class="p">]</span> <span class="k">for</span> <span class="n">x_pos</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="n">width</span><span class="p">)])</span> <span class="k">for</span> <span class="n">y_pos</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="n">height</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">text</span></div>
+
+
+<span class="c1"># Get a subscreen of a larger screen with an area cut out (filled with spaces)</span>
+<div class="viewcode-block" id="get_cutout"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.get_cutout">[docs]</a><span class="k">def</span> <span class="nf">get_cutout</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">hollow_x</span><span class="p">,</span> <span class="n">hollow_y</span><span class="p">,</span> <span class="n">hollow_width</span><span class="p">,</span> <span class="n">hollow_height</span><span class="p">):</span>
+    <span class="c1"># Adjust the hollow coordinates to be based on the subscreen, which we will grab presently.</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">hollow_x</span> <span class="o">-=</span> <span class="n">x</span>
+    <span class="k">if</span> <span class="n">y</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">hollow_y</span> <span class="o">-=</span> <span class="n">y</span>
+
+    <span class="c1"># If the hollow coordinates are negative, zero them and reduce the hollow size accordingly.</span>
+    <span class="k">if</span> <span class="n">hollow_x</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">hollow_width</span> <span class="o">+=</span> <span class="n">hollow_x</span>
+        <span class="n">hollow_x</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">if</span> <span class="n">hollow_y</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">hollow_height</span> <span class="o">+=</span> <span class="n">hollow_y</span>
+        <span class="n">hollow_y</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># Get the subscreen</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">get_subscreen</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+    <span class="n">height</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">__get_screen_dimensions</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+    <span class="c1"># If the hollow starts outside of the subscreen, just return the subscreen.</span>
+    <span class="k">if</span> <span class="n">hollow_x</span> <span class="o">&gt;=</span> <span class="n">width</span> <span class="ow">or</span> <span class="n">hollow_y</span> <span class="o">&gt;=</span> <span class="n">height</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">text</span>
+
+    <span class="c1"># Adjust the hollow dimensions to fit within the subscreen.</span>
+    <span class="n">hollow_x</span><span class="p">,</span> <span class="n">hollow_y</span><span class="p">,</span> <span class="n">hollow_width</span><span class="p">,</span> <span class="n">hollow_height</span> <span class="o">=</span> <span class="n">__adjust_dimensions</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">hollow_x</span><span class="p">,</span> <span class="n">hollow_y</span><span class="p">,</span> <span class="n">hollow_width</span><span class="p">,</span> <span class="n">hollow_height</span><span class="p">)</span>
+
+    <span class="c1"># With the subscreen grabbed and the hollow within the subscreen, it&#39;s time to get the values.</span>
+    <span class="n">cutout_screen</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">&quot; &quot;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">width</span><span class="p">)]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">height</span><span class="p">)]</span>
+    <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">height</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">width</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">__pos_in_range</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">hollow_x</span><span class="p">,</span> <span class="n">hollow_y</span><span class="p">,</span> <span class="n">hollow_width</span><span class="p">,</span> <span class="n">hollow_height</span><span class="p">):</span>
+                <span class="n">cutout_screen</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cutout_screen</span><span class="p">]</span></div>
+
+
+<span class="c1"># Compare two screens to see if they are identical.</span>
+<div class="viewcode-block" id="compare_screen"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.compare_screen">[docs]</a><span class="k">def</span> <span class="nf">compare_screen</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">,</span> <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="c1"># Get the screens in row, col format if they aren&#39;t already.</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="s1">&#39;__iter__&#39;</span><span class="p">):</span>
+        <span class="n">lhs</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">lhs</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="s1">&#39;__iter__&#39;</span><span class="p">):</span>
+        <span class="n">rhs</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">rhs</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lhs</span><span class="p">)):</span>
+        <span class="n">lhs</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">lhs</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">rhs</span><span class="p">)):</span>
+        <span class="n">rhs</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">rhs</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+
+    <span class="c1"># If the screens are not the same size, this comparison automatically fails. (Error here?)</span>
+    <span class="n">height</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">__get_screen_dimensions</span><span class="p">(</span><span class="n">lhs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">__get_screen_dimensions</span><span class="p">(</span><span class="n">rhs</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="c1"># Check every cell; if any do not match, the comparison fails.</span>
+    <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">height</span><span class="p">):</span>
+        <span class="n">lhs</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="n">lhs</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="k">if</span> <span class="n">case_sensitive</span> <span class="k">else</span> <span class="n">lhs</span><span class="p">[</span><span class="n">y</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">rhs</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="k">if</span> <span class="n">case_sensitive</span> <span class="k">else</span> <span class="n">rhs</span><span class="p">[</span><span class="n">y</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">width</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">lhs</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">!=</span> <span class="n">rhs</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="mi">1</span></div>
+
+
+<span class="c1"># Compare subscreens of two screens to see if they are identical.</span>
+<div class="viewcode-block" id="compare_subscreen"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.compare_subscreen">[docs]</a><span class="k">def</span> <span class="nf">compare_subscreen</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">lhs</span> <span class="o">=</span> <span class="n">get_subscreen</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+    <span class="n">rhs</span> <span class="o">=</span> <span class="n">get_subscreen</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">compare_screen</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">,</span> <span class="n">case_sensitive</span><span class="p">)</span></div>
+
+
+<span class="c1"># Compare cutout subscreens of two screens to see if they are equal.</span>
+<div class="viewcode-block" id="compare_cutout"><a class="viewcode-back" href="../../herptest.html#herptest.toolbox.compare_cutout">[docs]</a><span class="k">def</span> <span class="nf">compare_cutout</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">hollow_x</span><span class="p">,</span> <span class="n">hollow_y</span><span class="p">,</span> <span class="n">hollow_width</span><span class="p">,</span> <span class="n">hollow_height</span><span class="p">,</span> <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">lhs</span> <span class="o">=</span> <span class="n">get_cutout</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">hollow_x</span><span class="p">,</span> <span class="n">hollow_y</span><span class="p">,</span> <span class="n">hollow_width</span><span class="p">,</span> <span class="n">hollow_height</span><span class="p">)</span>
+    <span class="n">rhs</span> <span class="o">=</span> <span class="n">get_cutout</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">hollow_x</span><span class="p">,</span> <span class="n">hollow_y</span><span class="p">,</span> <span class="n">hollow_width</span><span class="p">,</span> <span class="n">hollow_height</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">compare_screen</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">,</span> <span class="n">case_sensitive</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Jeremiah Blanchard, Jack, Robert, Lunafreya Nyugen, Renee Kaynor.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

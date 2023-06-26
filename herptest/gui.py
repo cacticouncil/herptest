@@ -1,7 +1,7 @@
 import sys, os
 import time, random, pathlib
 from PySide2 import QtCore, QtWidgets, QtGui
-import homePage, testSuiteCreator, resultsPage, canvasUploadPage, autopullElmaPage, vmPage, canvas_interface
+from herptest import homePage, testSuiteCreator, resultsPage, canvasUploadPage, autopullElmaPage, vmPage
 
 
 
@@ -50,6 +50,7 @@ def createSplash():
     loadingTips = ["Loading..."]
 
     splashLoc = str(pathlib.Path(__file__).parent.absolute()) + "/herpSplash.png"
+    print("Splash Location: " + splashLoc)
     splash = QtWidgets.QSplashScreen(pixmap = QtGui.QPixmap(splashLoc))
     splash.showMessage('<h2> Tip: ' + random.choice(loadingTips) + "</h2>", QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom, QtGui.QColor(20,20,20))
     return splash

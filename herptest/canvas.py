@@ -6,7 +6,7 @@ import requests, urllib.request
 import sys
 import argparse
 # from pengtest.env_wrapper import EnvWrapper
-from herptest.env_wrapper import EnvWrapper
+from env_wrapper import EnvWrapper
 
 
 

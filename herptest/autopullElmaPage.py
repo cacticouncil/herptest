@@ -1,7 +1,7 @@
 from PySide2 import QtCore, QtWidgets, QtGui
 import os, subprocess
 import numpy as np
-from herptest import canvas_interface
+import canvas_interface
 
 class AutopullElmaPage(canvas_interface.AbstractCanvasInterface):
     def __init__(self):

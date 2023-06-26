@@ -59,15 +59,17 @@ class Student:
     def __str__(self):
         print(f"Last Name: {self.last_name}")
         print(f"First Name: {self.last_name}")
+        print(f"ID: {self.id}")
         print(f"Grade: {self.last_name}")
         print(f"Rubric: {self.rubric}")
 
 
 class CanvasUtil:
-    def __init__(self, canvas_url, dotenv_path, token_type):
+    def __init__(self, canvas_url, dotenv_path, token_type, userType):
         self.canvas_api_url = canvas_url
         load_dotenv(dotenv_path)  # load token from .env file
         self.token = os.getenv(token_type)
+        self.userType = userType
 
     def get_courses_this_semester(self) -> dict:
         """
@@ -300,12 +302,17 @@ def main():
 
     # CanvasUtil object, driver object for functionality,
     # if you want beta or production, a different .env path, or token, enter here into constructor.
+    user_type = input("Are you using Canvas as a Teacher or a TA? {Choices: teacher, ta} ")
+    if user_type != "teacher" and user_type != "ta":
+        print("| InputError: Your input does not match one of the chosen types.")
+        print("└─> exiting with error")
+        exit(-1)
     canvas_type = input("Would you like to upload to Live Canvas or Canvas Beta? {Choices: Live, Beta} ")
     if canvas_type == "Live" or canvas_type == "live":
-        canvas_util = CanvasUtil(PRODUCTION_URL,DOT_ENV_PATH,PRODUCTION_TOKEN_TYPE)
+        canvas_util = CanvasUtil(PRODUCTION_URL,DOT_ENV_PATH,PRODUCTION_TOKEN_TYPE, user_type)
         print("Starting CSV Uploader With Parameters -> API_URL:",PRODUCTION_URL,"-> DOT_ENV: ",DOT_ENV_PATH,"-> TOKEN_TYPE:",PRODUCTION_TOKEN_TYPE)
     elif canvas_type == "Beta" or canvas_type == "beta":
-        canvas_util = CanvasUtil(BETA_URL,DOT_ENV_PATH,BETA_TOKEN_TYPE)
+        canvas_util = CanvasUtil(BETA_URL,DOT_ENV_PATH,BETA_TOKEN_TYPE, user_type)
         print("Starting CSV Uploader With Parameters -> API_URL:",BETA_URL,"-> DOT_ENV:",DOT_ENV_PATH,"-> TOKEN_TYPE:",BETA_TOKEN_TYPE)
     else:
         print("| InputError: Your input does not match one of the chosen types.")

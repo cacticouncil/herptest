@@ -326,7 +326,7 @@ def main():
     course_names = list(courses.keys())
     print(course_names)
     # You *must* be of role teacher to see your courses, this can be changed if different roles needed
-    print("-=- Listing all courses for which you have role: Teacher in current enrollment period -=-")
+    print(f"-=- Listing all courses for which you have role: {user_type} in current enrollment period -=-")
     temp_count = 0
     # iterate over list of courses and print of the choices
     for name in courses:

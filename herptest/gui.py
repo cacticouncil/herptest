@@ -11,22 +11,22 @@ def initEnviron():
 def initWindow():
 
     window = QtWidgets.QMainWindow()
-    
+
     tabContainer =  QtWidgets.QTabWidget()
 
     #create all the tabs for the gui, save a reference to them, and add them to the tab creator
     tabContainer.addTab(homePage.HomePage(), "Run HerpTest")
     homePageInst = tabContainer.widget(0)
-    tabContainer.addTab(testSuiteCreator.TestSuiteCreator(), "Create Test Suite")
-    testSuiteCreatorInst = tabContainer.widget(1)
+    # tabContainer.addTab(testSuiteCreator.TestSuiteCreator(), "Create Test Suite")
+    # testSuiteCreatorInst = tabContainer.widget(1)
     tabContainer.addTab(resultsPage.ResultsPage(), "Test Results")
-    resultsPageInst = tabContainer.widget(2)
+    resultsPageInst = tabContainer.widget(1)
     tabContainer.addTab(canvasUploadPage.CanvasUploadPage(), "Canvas Uploader")
-    canvasUploaderInst = tabContainer.widget(3)
+    canvasUploaderInst = tabContainer.widget(2)
     tabContainer.addTab(autopullElmaPage.AutopullElmaPage(), "Auto-Pull && ELMA")
-    elmaInst = tabContainer.widget(4)
+    elmaInst = tabContainer.widget(3)
     tabContainer.addTab(vmPage.VmPage(), "VM Config")
-    vmPageInst = tabContainer.widget(5)
+    vmPageInst = tabContainer.widget(4)
 
 
     #give the home page the funcion to call when the SHOW RESULTS button is clicked
@@ -42,7 +42,7 @@ def initWindow():
     window.setCentralWidget(tabContainer)
     window.setWindowTitle("HerpTest")
     window.resize(800, 800)
-    
+
     createStatusBar(window)
     return window
 
@@ -67,7 +67,7 @@ def main():
     initEnviron()
     app = QtWidgets.QApplication([])
 
-    #handle the no-splash option 
+    #handle the no-splash option
     if len(sys.argv) > 1 and sys.argv[1] == "--no-splash":
         window = initWindow()
         window.show()

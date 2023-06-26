@@ -34,7 +34,7 @@ setup(
         'pathos',
         'pexpect',
         'pyte',
-	    'monkeydict',
+	'monkeydict',
         'pyautogui'
     ],
     package_data={'herptest': ['herptest/*.png', 'test_suite_templates/*.py']},

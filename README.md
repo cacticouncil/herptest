@@ -2,7 +2,7 @@
 
 <!-- HTML Formatting -->
 <h1 align="center">
-    <img src="img/%F0%9F%90%8DHerpTest.png">
+    <img src="img/HerpTest.png">
 </h1>
 
 <p align="center">

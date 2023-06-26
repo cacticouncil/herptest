@@ -1,7 +1,7 @@
 from PySide2 import QtCore, QtWidgets, QtGui
 import os, subprocess
 import numpy as np
-import canvas_interface
+from herptest import canvas_interface
 
 class CanvasUploadPage(canvas_interface.AbstractCanvasInterface):
 

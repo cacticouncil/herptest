@@ -360,4 +360,11 @@ Team Suite Life - CIS 4930 - Python Term Project
 - Robert
 - Lunafreya Nyugen
 - Renee Kaynor
+
+Prior Contributors (pengtest Team)
+- Tyler Maiello
+- Emma Andrews
+- Matthew Baumaister
+- Matthew McDermott
+- Gerard Avecilla
 ```

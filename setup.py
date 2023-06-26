@@ -13,7 +13,7 @@ setup(
     packages=['herptest',],
     url='https://github.com/RobertKilkenny/herptest_UFSA23',
     license='GPL 3',
-    author='Jeremiah Blanchard, Renee Kaynor, Lunafreya Trung Nguyen, Jack, Robert Kilkenny',
+    author='Jeremiah Blanchard, Renee Kaynor, Lunafreya Trung Nguyen, Jack, Robert Kilkenny, Tyler Maiello, Emma Andrews, Matthew Baumaister, Matthew McDermott, Gerard Avecilla',
     author_email='jjb@eng.ufl.edu',
     description='Test suite tools for instructors',
     install_requires=[

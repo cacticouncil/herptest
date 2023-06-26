@@ -34,7 +34,8 @@ setup(
         'pathos',
         'pexpect',
         'pyte',
-	'monkeydict'
+	'monkeydict',
+        'pyautogui'
     ],
     package_data={'herptest': ['herptest/*.png', 'test_suite_templates/*.py']},
 
@@ -46,7 +47,7 @@ setup(
             'elma = herptest.extract_lms_archive:main',
             'herp = herptest.run_test_suite:main',
             'herp_gui = herptest.gui:main',
-            'csv-upload = herptest.grade_csv_uploader:main',
+            'csv-upload = herptest.canvas:main',
             'herp-canvas = herptest.canvas:main',
             'moss = herptest.run_moss:main'
         ]

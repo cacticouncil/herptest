@@ -13,14 +13,15 @@ from pengtest.env_wrapper import EnvWrapper
 testStudent = True
 
 class CanvasWrapper:
-    def __init__(self, API_URL, env_path, token_type="TOKEN"): #Initializes CanvasWrapper object which stores an authenticated CanvasAPI Canvas object
+    def __init__(self, API_URL, env_path, user_type, token_type="TOKEN"): #Initializes CanvasWrapper object which stores an authenticated CanvasAPI Canvas object
         self.canv_url = API_URL
         load_dotenv(env_path)
         self.canv_token = os.getenv(token_type)
         self.canv = Canvas(API_URL, self.canv_token)
+        self.userType = user_type
 
-    def get_courses(self): #Get all courses with enrollment type of teacher
-        return self.canv.get_courses(enrollment_type='teacher')
+    def get_courses(self): #Get all courses with enrollment type of chosen
+        return self.canv.get_courses(enrollment_type=self.userType)
     
     def get_assignments(self, course): #Get all assignments in a course using the passed in course ID
         return self.canv.get_course(course).get_assignments()

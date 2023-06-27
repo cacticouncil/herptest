@@ -167,7 +167,8 @@ def main():
         courses = canvas.get_courses()
         print(courses[0])
     except:
-        print(f"| Canvas Util Object failed to be created. Either your API key is invalid or you have no courses as a {user_type}.")        print("| Hint: try using --setupenv to set up your environment variables.")
+        print(f"| Canvas Util Object failed to be created. Either your API key is invalid or you have no courses as a {user_type}.")
+        print("| Hint: try using --setupenv to set up your environment variables.")
         print("└─> exiting with error")
         exit(-1)
 

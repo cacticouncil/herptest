@@ -74,6 +74,7 @@ class CanvasWrapper:
                             # If the submission is late, then there 10% off for each day late
                             # [temporary proof of concept for automatic late penalties]
                             if(sub.late):
+                                # Converts Canvas late info (in seconds) into day value then compares with late policy input list
                                 days_late = math.ceil(sub.seconds_late/86400.0)
                                 if days_late < late_policy.size:
                                     res[2] = float(res[2]) - late_policy[days_late - 1]
@@ -189,6 +190,7 @@ def main():
         print("-=- Enter the relative path for your summary.csv file in your Test Suite's 'Results' folder {If on WSL, remember to use mounted drives and linux formatted paths} -=-")
         submission_path = input()
         print("-=- Specify late policy (enter a single-space separated list for total point deductions each day late (starting at 1 day late)) -=-")
+        # Turns user input from spaced ints into list (ex. input: "10 20 30 60" becomes [10, 20, 30, 60])
         late_policy = list(map(int, input().split()))
         print("-=- Pushing grades to Canvas -=-")
         canvas.push_grades(course_name, assn_name, submission_path, late_policy)

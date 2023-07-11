@@ -81,7 +81,8 @@ class CanvasUploadPage(canvas_interface.AbstractCanvasInterface):
         if self.modeSelectTests.checkState() == QtCore.Qt.Checked:
             #test results mode, call matty's code
             #print("test suite mode!")
-            
+
+            #late_policy not yet changeable on GUI
             self.canvasWrapper.push_grades(self.currentCourse, self.currentAssignment, self.uploadPath, late_policy=[])
         elif self.modeSelectRubric.checkState() == QtCore.Qt.Checked:
             #rubric mode, call tyler's code

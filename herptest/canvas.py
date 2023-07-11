@@ -59,7 +59,7 @@ class CanvasWrapper:
                 urllib.request.urlretrieve(assn.submissions_download_url, path)
 
 
-    def push_grades(self, _course, assignment, path): #Push grades to Canvas assignment (course name, assignment name) using the summary.csv from the given path
+    def push_grades(self, _course, assignment, path, late_policy): #Push grades to Canvas assignment (course name, assignment name) using the summary.csv from the given path
         try:
             results = self.get_results(path)
         except:
@@ -74,7 +74,14 @@ class CanvasWrapper:
                             # If the submission is late, then there 10% off for each day late
                             # [temporary proof of concept for automatic late penalties]
                             if(sub.late):
-                                res[2] = float(res[2]) - (10 * math.ceil(sub.seconds_late/86400.0))
+                                days_late = math.ceil(sub.seconds_late/86400.0)
+                                if days_late < late_policy.size:
+                                    res[2] = float(res[2]) - late_policy[days_late - 1]
+                                elif late_policy.size != 0:
+                                    res[2] = float(res[2]) - late_policy[-1]
+                                else:
+                                    print("-=- No late policy specified. No points deducted for late submissions. -=-")
+
                             print("Score of " + res[0] + ", ID: " + res[1] + " changed from " + str(sub.score) + " to " + str(float(res[2])) + ".")
                             sub.edit(
                                 submission = {
@@ -181,8 +188,10 @@ def main():
     if choice == "Push":
         print("-=- Enter the relative path for your summary.csv file in your Test Suite's 'Results' folder {If on WSL, remember to use mounted drives and linux formatted paths} -=-")
         submission_path = input()
+        print("-=- Specify late policy (enter a single-space separated list for total point deductions each day late (starting at 1 day late)) -=-")
+        late_policy = list(map(int, input().split()))
         print("-=- Pushing grades to Canvas -=-")
-        canvas.push_grades(course_name, assn_name, submission_path)
+        canvas.push_grades(course_name, assn_name, submission_path, late_policy)
         print("-=- Grades pushed successfully. Shutting down -=-")
 
     elif choice == "Pull":

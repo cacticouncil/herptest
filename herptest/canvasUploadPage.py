@@ -82,7 +82,7 @@ class CanvasUploadPage(canvas_interface.AbstractCanvasInterface):
             #test results mode, call matty's code
             #print("test suite mode!")
             
-            self.canvasWrapper.push_grades(self.currentCourse, self.currentAssignment, self.uploadPath)
+            self.canvasWrapper.push_grades(self.currentCourse, self.currentAssignment, self.uploadPath, late_policy=[])
         elif self.modeSelectRubric.checkState() == QtCore.Qt.Checked:
             #rubric mode, call tyler's code
             #print("rubric mode!")

@@ -108,7 +108,8 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         self.tokenType = "TOKEN"
         self.established = False
         try:
-            userType = pyautogui.confirm('View as a TA or a Teacher?', 'Select TA or Teacher', ['TA', 'Teacher']).lower()
+            # userType = pyautogui.confirm('View as a TA or a Teacher?', 'Select TA or Teacher', ['TA', 'Teacher']).lower()
+            userType = "TA"
 
             self.canvasUtil = grade_csv_uploader.CanvasUtil(self.canvasPath, self.dotEnvPath, self.tokenType, userType)
 

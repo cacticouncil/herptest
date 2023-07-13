@@ -35,7 +35,8 @@ setup(
         'pexpect',
         'pyte',
 	'monkeydict',
-        'pyautogui'
+        'pyautogui',
+        'python-xlib'
     ],
     package_data={'herptest': ['herptest/*.png', 'test_suite_templates/*.py']},
 

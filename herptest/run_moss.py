@@ -1,6 +1,6 @@
-from pengtest.moss import MossUtil
+from herptest.moss import MossUtil
 import os
-from pengtest.moss_wrapper import MossEnvWrapper
+from herptest.moss_wrapper import MossEnvWrapper
 import argparse
 import sys
 from dotenv import load_dotenv

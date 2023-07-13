@@ -1,6 +1,6 @@
 from PySide2 import QtCore, QtWidgets, QtGui
 import os
-import env_wrapper
+import herptest.env_wrapper
 
 
 class EnvDialog:

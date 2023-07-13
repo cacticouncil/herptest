@@ -9,7 +9,7 @@ import sys
 import argparse
 # TODO: fix import formatting for CLI command
 # from pengtest.env_wrapper import EnvWrapper
-from env_wrapper import EnvWrapper
+from herptest.env_wrapper import EnvWrapper
 
 # Version Number for Release
 VERSION_NUM = '0.9.9.5'

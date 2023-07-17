@@ -1,7 +1,7 @@
 import math
 import os
 import shutil
-from canvasapi import Canvas
+from canvasapi import Canvas, RubricAssessment
 from csv import reader
 from dotenv import load_dotenv
 import requests, urllib.request
@@ -55,7 +55,7 @@ class CanvasWrapper:
             shutil.rmtree(subdir)
         else:
             os.mkdir(subdir)
-        # lastnamefirstname
+        # UserID : lastnamefirstname
         names = {1267749: 'studenttest'}
         for courses in self.get_courses():
             if courses.name == _course:
@@ -65,6 +65,13 @@ class CanvasWrapper:
         for assn in self.get_assignments(list(course.id for course in self.get_courses() if course.name == _course)[0]):
             if(assignment == assn.name):
                 allSubmissions = assn.get_submissions()
+                if(assn.use_rubric_for_grading):
+                    print("Downloading Grading rubric")
+                    test = assn.rubric
+                    
+                else:
+                    print("Does not use a rubric for grading")
+
                 for subm in allSubmissions:
                     for attch in subm.attachments:
                         if (subm.late):
@@ -108,12 +115,24 @@ class CanvasWrapper:
                             # [temporary proof of concept for automatic late penalties]
                             if(sub.late):
                                 res[2] = float(res[2]) - (10 * math.ceil(sub.seconds_late/86400.0))
-                            print("Score of " + res[0] + ", ID: " + res[1] + " changed from " + str(sub.score) + " to " + str(float(res[2])) + ".")
+                            res[2] = assn.points_possible * float(res[2])/ 100.0
+                            print("Score of " + res[0] + ", ID: " + res[1] + " changed from " + str(sub.score) + " to " + str(res[2]) + ".")
                             sub.edit(
+                                comment = {
+                                    'text_comment' : "testing comments"
+                                },
                                 submission = {
                                     'posted_grade' : float(res[2])
                                 }
                             )
+
+                            print(sub.rubric_assignment)
+                            # if (assn.use_rubric_for_grading):
+                            #     sub.edit(
+                            #         rubric_assignment['_8154'] = {
+                            #             'points' : 0
+                            #         }
+                            #     )
                     
 
 def env_setup():

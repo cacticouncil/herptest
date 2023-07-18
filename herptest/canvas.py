@@ -84,7 +84,7 @@ class CanvasWrapper:
                                 os.mkdir("submissions")
                             open("submissions/" + str(names[subm.user_id]) + "_" + str(subm.user_id) + "_" + str(subm.assignment_id) + "_" + attch.filename, "wb").write(submissionFile.content)
                         shutil.make_archive("submissions", 'zip', subdir)
-                    return assn.submissions_download_url
+                return assn.submissions_download_url
             
     def download_submissions(self, _course, assignment, path): #Automatically download submissions.zip from a course assignment (course name, assignment name) to the given path
         for assn in self.get_assignments(list(course.id for course in self.get_courses() if course.name == _course)[0]):

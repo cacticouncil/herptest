@@ -1,7 +1,8 @@
 import math
 import os
 import shutil
-from canvasapi import Canvas, RubricAssessment
+from canvasapi import Canvas
+from canvasapi.rubric import RubricAssessment
 from csv import reader
 from dotenv import load_dotenv
 import requests, urllib.request
@@ -68,7 +69,6 @@ class CanvasWrapper:
                 if(assn.use_rubric_for_grading):
                     print("Downloading Grading rubric")
                     test = assn.rubric
-                    
                 else:
                     print("Does not use a rubric for grading")
 
@@ -106,8 +106,23 @@ class CanvasWrapper:
             print("| InputError: Your path does not lead to summary.csv.")
             print("└─> exiting with error")
             exit(-1)
+
         for assn in self.get_assignments(list(course.id for course in self.get_courses() if course.name == _course)[0]):
             if(assignment == assn.name):
+                # Setting up rubric functionality
+                counter = 0
+                print("\nFormat of rubric details:", *assn.rubric_settings, "\nID:", assn.rubric_settings["id"], "\n\n")
+                print(*assn.rubric)
+                criterion = {}
+                for section in assn.rubric:
+                    print(section['id'])
+                    criterion[section['id']] = {
+                        'points' : 0,
+                        'comments' : "Testing Rubric comments",
+                        'ratings' : section['ratings']
+                    }
+                print(*criterion["_8154"])
+
                 for sub in assn.get_submissions():
                     for res in results:
                         if(str(sub.user_id) == res[1]):
@@ -115,25 +130,39 @@ class CanvasWrapper:
                             # [temporary proof of concept for automatic late penalties]
                             if(sub.late):
                                 res[2] = float(res[2]) - (10 * math.ceil(sub.seconds_late/86400.0))
-                            res[2] = assn.points_possible * float(res[2])/ 100.0
-                            print("Score of " + res[0] + ", ID: " + res[1] + " changed from " + str(sub.score) + " to " + str(res[2]) + ".")
+                            print("Score of " + res[0] + ", ID: " + res[1] + " changed from " + str(sub.score) + "% to " + str(res[2]) + "%.")
                             sub.edit(
                                 comment = {
-                                    'text_comment' : "testing comments"
+                                    #Have commented when testing or a lot of comments will appear :(
+                                    #'text_comment' : "testing comments"
                                 },
                                 submission = {
-                                    'posted_grade' : float(res[2])
+                                    'posted_grade' : str(res[2]) + "%"
                                 }
                             )
+                            course = None
+                            for test_course in self.get_courses():
+                                if test_course.name == _course:
+                                    course = test_course
+                            if course == None:
+                                print("Error: valid course could not be found (Check around line 130)!!")
+                            else:
+                                rubric = RubricAssessment(self.canv_url, {
+                                    'rubric_association_id' : assn.rubric_settings["id"],
+                                    'id' : counter,
+                                    'artifact_type' : "Submission",
+                                    'rubric_assessment' : {
+                                        'user_id' : 1267749,
+                                        'assessment_type' : "grading"
+                                        }
+                                    })
+                                counter = counter + 1
+                                rubric.rubric_assessment.update(criterion)
+                                # print("checking rubric:", rubric.rubric_assessment["_8154"]["points"], rubric.rubric_assessment["_8154"]["comments"])
+                                sub.edit(
+                                    rubric_assessment = {rubric}
+                                )
 
-                            print(sub.rubric_assignment)
-                            # if (assn.use_rubric_for_grading):
-                            #     sub.edit(
-                            #         rubric_assignment['_8154'] = {
-                            #             'points' : 0
-                            #         }
-                            #     )
-                    
 
 def env_setup():
     e = EnvWrapper()

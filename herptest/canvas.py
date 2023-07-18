@@ -134,7 +134,7 @@ class CanvasWrapper:
                             sub.edit(
                                 comment = {
                                     #Have commented when testing or a lot of comments will appear :(
-                                    #'text_comment' : "testing comments"
+                                    'text_comment' : "HELP ME"
                                 },
                                 submission = {
                                     'posted_grade' : str(res[2]) + "%"

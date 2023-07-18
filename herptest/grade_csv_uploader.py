@@ -76,7 +76,7 @@ class CanvasUtil:
         Get dictionary (name -> id) of courses in this semester
         """
         # response = requests.get(f"{self.canvas_api_url}/courses?enrollment_type=teacher&include=items&per_page=1000", auth=BearerAuth(self.token))
-        response = requests.get(f"{self.canvas_api_url}/courses?enrollment_type=ta&include=items&per_page=1000", auth=BearerAuth(self.token))
+        response = requests.get(f"{self.canvas_api_url}/courses?enrollment_type={self.userType}&include=items&per_page=1000", auth=BearerAuth(self.token))
         content = response.json()
         # try:
         #     enrollment_term_id = content[0]["enrollment_term_id"]

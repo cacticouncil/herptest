@@ -76,9 +76,9 @@ class CanvasWrapper:
                             if(sub.late):
                                 # Converts Canvas late info (in seconds) into day value then compares with late policy input list
                                 days_late = math.ceil(sub.seconds_late/86400.0)
-                                if days_late < late_policy.size:
+                                if days_late < len(late_policy):
                                     res[2] = float(res[2]) - late_policy[days_late - 1]
-                                elif late_policy.size != 0:
+                                elif len(late_policy) != 0:
                                     res[2] = float(res[2]) - late_policy[-1]
                                 else:
                                     print("-=- No late policy specified. No points deducted for late submissions. -=-")
@@ -191,7 +191,14 @@ def main():
         submission_path = input()
         print("-=- Specify late policy (enter a single-space separated list for total point deductions each day late (starting at 1 day late)) -=-")
         # Turns user input from spaced ints into list (ex. input: "10 20 30 60" becomes [10, 20, 30, 60])
-        late_policy = list(map(int, input().split()))
+        invalid_policy = True
+        while invalid_policy:
+            try:
+                late_policy = list(map(int, input().split()))
+                invalid_policy = False
+            except ValueError:
+                print("-=- Invalid late policy (check for non-space, non-float values). Please input again.-=-")
+                invalid_policy = True
         print("-=- Pushing grades to Canvas -=-")
         canvas.push_grades(course_name, assn_name, submission_path, late_policy)
         print("-=- Grades pushed successfully. Shutting down -=-")

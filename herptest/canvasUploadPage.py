@@ -90,8 +90,21 @@ class CanvasUploadPage(canvas_interface.AbstractCanvasInterface):
         if self.modeSelectTests.checkState() == QtCore.Qt.Checked:
             #test results mode, call matty's code
             #print("test suite mode!")
-            self.late_policy = list(map(float, self.lateField.text.split()))
-            self.canvasWrapper.push_grades(self.currentCourse, self.currentAssignment, self.uploadPath, self.late_policy)
+            try:
+                self.late_policy = list(map(float, self.lateField.text().split()))
+                self.canvasWrapper.push_grades(self.currentCourse, self.currentAssignment, self.uploadPath, self.late_policy)
+                success_dialog = QtWidgets.QMessageBox()
+                success_dialog.setText('Grades successfully uploaded!')
+                success_dialog.setWindowTitle('Success!')
+                success_dialog.exec_()
+            except ValueError:
+                print("-=- Invalid late policy (check for non-space, non-float values). Please input again.-=-")
+
+                late_dialog = QtWidgets.QMessageBox()
+                late_dialog.setText('Check for non-space, non-float values in the late policy input box.')
+                late_dialog.setWindowTitle('Invalid late policy!')
+                late_dialog.exec_()
+
         elif self.modeSelectRubric.checkState() == QtCore.Qt.Checked:
             #rubric mode, call tyler's code
             #print("rubric mode!")

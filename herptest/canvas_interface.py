@@ -1,6 +1,7 @@
 from PySide2 import QtCore, QtWidgets, QtGui
 import os, subprocess
 import numpy as np
+import pyautogui
 from herptest import grade_csv_uploader, canvas, env_dialog
 
 class AbstractCanvasInterface(QtWidgets.QWidget):
@@ -108,8 +109,8 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         self.tokenType = "TOKEN"
         self.established = False
         try:
-            # userType = pyautogui.confirm('View as a TA or a Teacher?', 'Select TA or Teacher', ['TA', 'Teacher']).lower()
-            userType = "TA"
+            userType = pyautogui.confirm('View as a TA or a Teacher?', 'Select TA or Teacher', ['TA', 'Teacher']).lower()
+            #userType = "TA"
 
             self.canvasUtil = grade_csv_uploader.CanvasUtil(self.canvasPath, self.dotEnvPath, self.tokenType, userType)
 

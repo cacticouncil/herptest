@@ -114,17 +114,21 @@ class CanvasWrapper:
             if(assignment == assn.name):
                 # Setting up rubric functionality
                 counter = 0
-                print("\nFormat of rubric details:", *assn.rubric_settings, "\nID:", assn.rubric_settings["id"], "\n\n")
-                print(*assn.rubric)
-                criterion = {}
-                for section in assn.rubric:
-                    print(section['id'])
-                    criterion[section['id']] = {
-                        'points' : 0,
-                        'comments' : "Testing Rubric comments",
-                        'ratings' : section['ratings']
-                    }
-                print(*criterion["_8154"])
+                # print("\nFormat of rubric details:", *assn.rubric_settings, "\nID:", assn.rubric_settings["id"], "\n\n")
+                # print(*assn.rubric)
+
+                if assn.use_rubric_for_grading:
+                    criterion = {}
+                    rating_dict = {}
+                    for section in assn.rubric:
+                        for rating in section["ratings"]:
+                            rating_dict[section['id']] = {float(rating["points"]): rating["id"]}
+
+                        criterion[section['id']] = {
+                            'rating_id': rating_dict[section['id']][float(0)],
+                            'points': 0,
+                            'comments': "Testing Rubric comments"
+                        }
 
                 for sub in assn.get_submissions():
                     for res in results:
@@ -133,7 +137,7 @@ class CanvasWrapper:
                             # [temporary proof of concept for automatic late penalties]
                             if(sub.late):
                                 res[2] = float(res[2]) - (10 * math.ceil(sub.seconds_late/86400.0))
-                            print("Score of " + res[0] + ", ID: " + res[1] + " changed from " + str(sub.score) + "% to " + str(res[2]) + "%.")
+                            print("Score of " + res[0] + ", ID: " + res[1] + " changed from " + str(sub.score / assn.points_possible * 100) + "% to " + str(res[2]) + "%.")
                             sub.edit(
                                 comment = {
                                     #Have commented when testing or a lot of comments will appear :(
@@ -150,21 +154,23 @@ class CanvasWrapper:
                             if course == None:
                                 print("Error: valid course could not be found (Check around line 130)!!")
                             else:
-                                rubric = RubricAssessment(self.canv_url, {
-                                    'rubric_association_id' : assn.rubric_settings["id"],
-                                    'id' : counter,
-                                    'artifact_type' : "Submission",
-                                    'rubric_assessment' : {
-                                        'user_id' : 1267749,
-                                        'assessment_type' : "grading"
+                                if assn.use_rubric_for_grading:
+                                    rubric = RubricAssessment(self.canv_url, {
+                                        'id': counter,
+                                        'bookmarked' : True,
+                                        'artifact_type': "Submission",
+                                        'rubric_assessment': {
+                                            'user_id': 1267749,
+                                            'assessment_type': "grading"
                                         }
                                     })
-                                counter = counter + 1
-                                rubric.rubric_assessment.update(criterion)
-                                # print("checking rubric:", rubric.rubric_assessment["_8154"]["points"], rubric.rubric_assessment["_8154"]["comments"])
-                                sub.edit(
-                                    rubric_assessment = {rubric}
-                                )
+                                    counter = counter + 1
+                                    rubric.rubric_assessment.update(criterion)
+                                    print("checking rubric:", assn.rubric_settings)
+                                    sub.edit(
+                                        rubric_assessment={rubric}
+                                    )
+                                    print(rubric.rubric_assessment)
 
 
 def env_setup():

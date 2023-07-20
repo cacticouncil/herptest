@@ -2,7 +2,7 @@
 
 <!-- HTML Formatting -->
 <h1 align="center">
-    <img src="img/%F0%9F%90%8DHerpTest.png">
+    <img src="img/HerpTest.png">
 </h1>
 
 <p align="center">
@@ -360,4 +360,11 @@ Team Suite Life - CIS 4930 - Python Term Project
 - Robert
 - Lunafreya Nyugen
 - Renee Kaynor
+
+Prior Contributors (pengtest Team)
+- Tyler Maiello
+- Emma Andrews
+- Matthew Baumaister
+- Matthew McDermott
+- Gerard Avecilla
 ```

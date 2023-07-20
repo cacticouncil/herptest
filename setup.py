@@ -13,7 +13,7 @@ setup(
     packages=['herptest',],
     url='https://github.com/RobertKilkenny/herptest_UFSA23',
     license='GPL 3',
-    author='Jeremiah Blanchard, Renee Kaynor, Lunafreya Trung Nguyen, Jack, Robert Kilkenny',
+    author='Jeremiah Blanchard, Renee Kaynor, Lunafreya Trung Nguyen, Jack, Robert Kilkenny, Tyler Maiello, Emma Andrews, Matthew Baumaister, Matthew McDermott, Gerard Avecilla',
     author_email='jjb@eng.ufl.edu',
     description='Test suite tools for instructors',
     install_requires=[
@@ -34,7 +34,9 @@ setup(
         'pathos',
         'pexpect',
         'pyte',
-	'monkeydict'
+	'monkeydict',
+        'pyautogui',
+        'python-xlib'
     ],
     package_data={'herptest': ['herptest/*.png', 'test_suite_templates/*.py']},
 
@@ -46,7 +48,7 @@ setup(
             'elma = herptest.extract_lms_archive:main',
             'herp = herptest.run_test_suite:main',
             'herp_gui = herptest.gui:main',
-            'csv-upload = herptest.grade_csv_uploader:main',
+            'csv-upload = herptest.canvas:main',
             'herp-canvas = herptest.canvas:main',
             'moss = herptest.run_moss:main'
         ]

@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>herptest &mdash; herptest_sphinx 0.9.9.16 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            herptest_sphinx
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">herptest_sphinx</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">herptest</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for herptest</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os.path</span>
+<span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">SimpleNamespace</span>
+<span class="kn">from</span> <span class="nn">monkeydict</span> <span class="kn">import</span> <span class="n">MonkeyDict</span>   <span class="c1"># Syntactic sugar for dictionaries &lt;handle&gt;[&quot;key&quot;] = val -&gt; &lt;handle&gt;.key = val</span>
+
+
+<span class="n">VERSION</span> <span class="o">=</span> <span class="s1">&#39;0.9.9.15&#39;</span>
+
+<span class="c1"># TODO: Make this prettier</span>
+<div class="viewcode-block" id="attr_has_value"><a class="viewcode-back" href="../herptest.html#herptest.attr_has_value">[docs]</a><span class="k">def</span> <span class="nf">attr_has_value</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determines if an attribute is included in a base context</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    base: n/a</span>
+<span class="sd">        n/a</span>
+
+<span class="sd">    attr_name: str</span>
+<span class="sd">        Attribute name</span>
+
+<span class="sd">    Return</span>
+<span class="sd">    ------</span>
+
+<span class="sd">    &lt;BOOLEAN&gt;: boolean</span>
+<span class="sd">        The result of either an attribute name is included in a context</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="kc">True</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span> <span class="k">else</span> <span class="kc">False</span></div>
+
+
+<span class="c1"># Test Suite Configuration</span>
+<div class="viewcode-block" id="Config"><a class="viewcode-back" href="../herptest.html#herptest.Config">[docs]</a><span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">MonkeyDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class that handles generating and handling all of the `Config` behaviours</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">test_sets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">keywords</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for `Config` class</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        runtime: argparse.Namespace</span>
+<span class="sd">            Runtime context initialized by the commandline arguments.</span>
+
+<span class="sd">        test_sets: TestSet</span>
+<span class="sd">            Custom testing sets that are stored in a dictonary</span>
+
+<span class="sd">        keywords: tuple</span>
+<span class="sd">            Custom modifiers (arguments) that can be used by the Config Object. </span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;runtime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">runtime</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;sets&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_sets</span>
+
+        <span class="c1"># Log locations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">general</span> <span class="o">=</span> <span class="n">MonkeyDict</span><span class="p">({</span><span class="s2">&quot;result_path&quot;</span><span class="p">:</span>  <span class="s2">&quot;Results&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;result_file&quot;</span><span class="p">:</span>  <span class="s2">&quot;result.csv&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;error_log&quot;</span><span class="p">:</span>    <span class="s2">&quot;error.log&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;summary_file&quot;</span><span class="p">:</span> <span class="s2">&quot;summary.csv&quot;</span><span class="p">})</span>
+
+        <span class="c1"># Paths to base files and target source destination</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">build</span> <span class="o">=</span> <span class="n">MonkeyDict</span><span class="p">({</span><span class="s2">&quot;base&quot;</span><span class="p">:</span>          <span class="kc">None</span><span class="p">,</span>
+                               <span class="s2">&quot;destination&quot;</span><span class="p">:</span>   <span class="kc">None</span><span class="p">,</span>
+
+        <span class="c1"># Build parameters: source folder (src), build destination (bin)</span>
+                               <span class="s2">&quot;subject_src&quot;</span><span class="p">:</span>   <span class="kc">None</span><span class="p">,</span>
+                               <span class="s2">&quot;subject_bin&quot;</span><span class="p">:</span>   <span class="kc">None</span><span class="p">,</span>
+                               <span class="s2">&quot;framework_src&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                               <span class="s2">&quot;framework_bin&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+
+        <span class="c1"># Build commands: preparing &amp; compiling (additional keys: $source_dir, $build_dir)</span>
+        <span class="c1"># Command format: list[] is single command&#39;s elements (command and arguments); tuple() is list of commands.</span>
+                               <span class="s2">&quot;prep_cmd&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                               <span class="s2">&quot;compile_cmd&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="c1"># Compilation Commands</span>
+                               <span class="s2">&quot;post_cmd&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">})</span>   <span class="c1"># After Compilation Commands</span>
+
+        <span class="c1"># Process specially recognized keywords</span>
+        <span class="k">if</span> <span class="s2">&quot;threaded&quot;</span> <span class="ow">in</span> <span class="n">keywords</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">threaded</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;WARNING: test suite threading config replaced by command line (threaded=True)&quot;</span><span class="p">)</span>
+                <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;threaded&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">threaded</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;threaded&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Process keywords to make additional assignments.</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">keywords</span><span class="p">:</span>
+             <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+
+
+
+    <span class="c1"># Make configuration paths absolute</span>
+<div class="viewcode-block" id="Config.make_paths_absolute"><a class="viewcode-back" href="../herptest.html#herptest.Config.make_paths_absolute">[docs]</a>    <span class="k">def</span> <span class="nf">make_paths_absolute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Make configuration paths absolute</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">result_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">result_path</span><span class="p">)</span> <span class="k">if</span> <span class="n">attr_has_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">general</span><span class="p">,</span> <span class="s2">&quot;result_path&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">base</span><span class="p">)</span> <span class="k">if</span> <span class="n">attr_has_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="p">,</span> <span class="s2">&quot;base&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">destination</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">destination</span><span class="p">)</span> <span class="k">if</span> <span class="n">attr_has_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="p">,</span> <span class="s2">&quot;destination&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">resources</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">resources</span><span class="p">)</span> <span class="k">if</span> <span class="n">attr_has_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="p">,</span> <span class="s2">&quot;resources&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">subject_src</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">subject_src</span><span class="p">)</span> <span class="k">if</span> <span class="n">attr_has_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="p">,</span> <span class="s2">&quot;subject_src&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">subject_bin</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">subject_bin</span><span class="p">)</span> <span class="k">if</span> <span class="n">attr_has_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="p">,</span> <span class="s2">&quot;subject_bin&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">framework_src</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">framework_src</span><span class="p">)</span> <span class="k">if</span> <span class="n">attr_has_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="p">,</span> <span class="s2">&quot;framework_src&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">framework_bin</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">framework_bin</span><span class="p">)</span> <span class="k">if</span> <span class="n">attr_has_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build</span><span class="p">,</span> <span class="s2">&quot;framework_bin&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+    <span class="c1">######################################################</span>
+    <span class="c1"># Initialization and shutdown of components</span>
+
+    <span class="c1"># Returns framework context</span>
+<div class="viewcode-block" id="Config.initialize_framework"><a class="viewcode-back" href="../herptest.html#herptest.Config.initialize_framework">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_framework</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A function that is meant to be overloaded and return the framework context [typically handled by the config.py]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="Config.shutdown_framework"><a class="viewcode-back" href="../herptest.html#herptest.Config.shutdown_framework">[docs]</a>    <span class="k">def</span> <span class="nf">shutdown_framework</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">framework_context</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A function that is meant to be overloaded and return the framework shutdown routine</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        framework_context: </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">framework_context</span></div>
+
+
+    <span class="c1"># Returns subject context</span>
+<div class="viewcode-block" id="Config.initialize_subject"><a class="viewcode-back" href="../herptest.html#herptest.Config.initialize_subject">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_subject</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">submission</span><span class="p">,</span> <span class="n">framework_context</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A function that is meant to be overloaded and return the subject context</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">submission</span></div>
+
+
+<div class="viewcode-block" id="Config.shutdown_subject"><a class="viewcode-back" href="../herptest.html#herptest.Config.shutdown_subject">[docs]</a>    <span class="k">def</span> <span class="nf">shutdown_subject</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subject_context</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A function that is meant to be overloaded and return the subject shutdown routine</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">subject_context</span></div>
+
+
+    <span class="c1"># Returns test set context</span>
+<div class="viewcode-block" id="Config.initialize_test_set"><a class="viewcode-back" href="../herptest.html#herptest.Config.initialize_test_set">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_test_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test_set</span><span class="p">,</span> <span class="n">subject_context</span><span class="p">,</span> <span class="n">framework_context</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A function that is meant to be overloaded and return the test set context</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">test_set</span></div>
+
+
+<div class="viewcode-block" id="Config.shutdown_test_set"><a class="viewcode-back" href="../herptest.html#herptest.Config.shutdown_test_set">[docs]</a>    <span class="k">def</span> <span class="nf">shutdown_test_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test_set_context</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A function that is meant to be overloaded and return the test set shutdown routine</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">test_set_context</span></div></div>
+
+
+
+<span class="c1"># Test Set (Subsection of Test Suite)</span>
+<div class="viewcode-block" id="TestSet"><a class="viewcode-back" href="../herptest.html#herptest.TestSet">[docs]</a><span class="k">class</span> <span class="nc">TestSet</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class that handles generating and handling all of the `TestSet` behaviours</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span>    <span class="c1"># Proper Name</span>
+            <span class="nb">id</span><span class="p">,</span>                 <span class="c1"># Shorthand Name</span>
+            <span class="n">num_tests</span><span class="p">,</span>          <span class="c1"># Number of tests or function to get the number of tests</span>
+            <span class="n">test_function</span><span class="p">,</span>      <span class="c1"># Function to actually RUN the tests</span>
+            <span class="o">**</span><span class="n">keywords</span><span class="p">):</span>        <span class="c1"># Parameters that can be sents as defaults (makeshift dictionary)</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Constructor for `TestSet` class</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        name: str</span>
+<span class="sd">            Proper name of the Test Set</span>
+
+<span class="sd">        id: str</span>
+<span class="sd">            Shorthand name of the Test Set (or index)</span>
+
+<span class="sd">        num_tests: int</span>
+<span class="sd">            Number of tests or function to get the number of tests</span>
+
+<span class="sd">        test_function: n/a</span>
+<span class="sd">            An instructor written function that must return a value betwen 0-1, this will determine how the subject (code submission) is assesed</span>
+
+<span class="sd">        keywords: tuple</span>
+<span class="sd">            A dictionary of Modifiers</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="o">=</span> <span class="nb">id</span>
+
+
+        <span class="c1"># Assign the test count function. If it isn&#39;t valid, throw an exception.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num_tests</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_num_tests</span> <span class="o">=</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">num_tests</span>
+        <span class="k">elif</span> <span class="nb">callable</span><span class="p">(</span><span class="n">num_tests</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">getfullargspec</span><span class="p">(</span><span class="n">num_tests</span><span class="p">)</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">getfullargspec</span><span class="p">(</span><span class="n">TestSet</span><span class="o">.</span><span class="n">__num_tests_template</span><span class="p">)</span><span class="o">.</span><span class="n">args</span><span class="p">):</span>
+               <span class="bp">self</span><span class="o">.</span><span class="n">get_num_tests</span> <span class="o">=</span> <span class="n">num_tests</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Test count function has wrong number of paramters&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Test count is invalid type (must be callable or integer)&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Assign the test run function. If it isn&#39;t valid, throw an exception.</span>
+        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">test_function</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">getfullargspec</span><span class="p">(</span><span class="n">test_function</span><span class="p">)</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">getfullargspec</span><span class="p">(</span><span class="n">TestSet</span><span class="o">.</span><span class="n">__run_test_template</span><span class="p">)</span><span class="o">.</span><span class="n">args</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">run_case_test</span> <span class="o">=</span> <span class="n">test_function</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Test run function has wrong number of paramters&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Test run function is not callable&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Grab optional keyword argument values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_score</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;max_score&quot;</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_penalty</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;max_penalty&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_test_desc</span> <span class="o">=</span> <span class="n">keywords</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;test_desc&quot;</span><span class="p">,</span> <span class="n">TestSet</span><span class="o">.</span><span class="n">__get_test_description</span><span class="p">)</span>
+
+        <span class="c1"># Initialize penalty lists</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_case_penalties</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_penalties</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1">#self.project_penalties = [ (&quot;Time&quot;, 0.3) ]</span>
+        <span class="c1">#self.test_case_penalties = [ (&quot;Leaks&quot;, 0.3), (&quot;Memory&quot;, 0.3) ]</span>
+        <span class="c1">#self.max_penalty = 0.3</span>
+        <span class="c1">#self._max_penalty = keywords.pop(&quot;max_penalty&quot;, 0.0)</span>
+        <span class="c1">#self._set_penalties = keywords.pop(&quot;set_penalties&quot;, [])</span>
+        <span class="c1">#self._case_penalties = keywords.pop(&quot;case_penalties&quot;, [])</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Name Getter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        id Getter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_id</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">num_tests</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        num_tests Getter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_tests</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_score</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        max_score Getter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_score</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">case_penalties</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        case_penalties Getter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_case_penalties</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">set_penalties</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        set_penalties Getter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_penalties</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_penalty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        max_penalty Getter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_penalty</span>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__num_tests_template</span><span class="p">(</span><span class="n">set_context</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">framework</span><span class="p">,</span> <span class="n">cfg</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Template function should never be called!&quot;</span><span class="p">)</span>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__run_test_template</span><span class="p">(</span><span class="n">test_num</span><span class="p">,</span> <span class="n">set_context</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">framework</span><span class="p">,</span> <span class="n">cfg</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Template function should never be called!&quot;</span><span class="p">)</span>
+        <span class="k">pass</span>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__get_test_description</span><span class="p">(</span><span class="n">test_num</span><span class="p">,</span> <span class="o">*</span><span class="n">arg_list</span><span class="p">,</span> <span class="o">**</span><span class="n">keywords</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;Test #</span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">test_num</span>
+
+
+        <span class="c1">#self.project_penalties = [ (&quot;Time&quot;, 0.3) ]</span>
+        <span class="c1">#self.test_case_penalties = [ (&quot;Leaks&quot;, 0.3), (&quot;Memory&quot;, 0.3) ]</span>
+<div class="viewcode-block" id="TestSet.add_case_penalty"><a class="viewcode-back" href="../herptest.html#herptest.TestSet.add_case_penalty">[docs]</a>    <span class="k">def</span> <span class="nf">add_case_penalty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">fraction</span><span class="p">,</span> <span class="n">function</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add the penalty of a test case</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        name: n/a</span>
+<span class="sd">            n/a</span>
+
+<span class="sd">        fraction: n/a</span>
+<span class="sd">            n/a</span>
+
+<span class="sd">        function: n/a</span>
+<span class="sd">            n/a</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fraction</span> <span class="ow">and</span> <span class="n">function</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_case_penalties</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">name</span><span class="p">,</span> <span class="n">fraction</span><span class="p">,</span> <span class="n">function</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="TestSet.add_set_penalty"><a class="viewcode-back" href="../herptest.html#herptest.TestSet.add_set_penalty">[docs]</a>    <span class="k">def</span> <span class="nf">add_set_penalty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">fraction</span><span class="p">,</span> <span class="n">function</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add the penalty of a test set</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        name: n/a</span>
+<span class="sd">            n/a</span>
+
+<span class="sd">        fraction: n/a</span>
+<span class="sd">            n/a</span>
+
+<span class="sd">        function: n/a</span>
+<span class="sd">            n/a</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fraction</span> <span class="ow">and</span> <span class="n">function</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_penalties</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">name</span><span class="p">,</span> <span class="n">fraction</span><span class="p">,</span> <span class="n">function</span><span class="p">))</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Jeremiah Blanchard, Jack, Robert, Lunafreya Nyugen, Renee Kaynor.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

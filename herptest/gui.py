@@ -7,7 +7,7 @@ from herptest import homePage, testSuiteCreator, resultsPage, canvasUploadPage, 
 
 def initEnviron():
     os.environ["LIBGL_ALWAYS_INDIRECT"] = "1" #necessary to avoid openGL errors with accessing Windows openGL from WSL
-    os.environ["XDG_RUNTIME_DIR"] = "/tmp/peng-runtime" #used by qt for cache
+    os.environ["XDG_RUNTIME_DIR"] = "/tmp/herp-runtime" #used by qt for cache
 def initWindow():
 
     window = QtWidgets.QMainWindow()

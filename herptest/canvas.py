@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 import requests, urllib.request
 import sys
 import argparse
-# from pengtest.env_wrapper import EnvWrapper
 from herptest.env_wrapper import EnvWrapper
 
 # For testing purposes- turn off when not testing
@@ -129,8 +128,6 @@ class CanvasWrapper:
                 for sub in assn.get_submissions():
                     for res in results:
                         if(str(sub.user_id) == res[1]):
-                            # If the submission is late, then there 10% off for each day late
-                            # [temporary proof of concept for automatic late penalties]
                             if(sub.late):
                                 # Converts Canvas late info (in seconds) into day value then compares with late policy input list
                                 days_late = math.ceil(sub.seconds_late/86400.0)

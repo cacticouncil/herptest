@@ -7,8 +7,6 @@ import json
 from dotenv import load_dotenv
 import sys
 import argparse
-# TODO: fix import formatting for CLI command
-# from pengtest.env_wrapper import EnvWrapper
 from herptest.env_wrapper import EnvWrapper
 
 # Version Number for Release
@@ -75,19 +73,8 @@ class CanvasUtil:
         """
         Get dictionary (name -> id) of courses in this semester
         """
-        # response = requests.get(f"{self.canvas_api_url}/courses?enrollment_type=teacher&include=items&per_page=1000", auth=BearerAuth(self.token))
         response = requests.get(f"{self.canvas_api_url}/courses?enrollment_type={self.userType}&include=items&per_page=1000", auth=BearerAuth(self.token))
         content = response.json()
-        # try:
-        #     enrollment_term_id = content[0]["enrollment_term_id"]
-        # except:
-        #     #if there are no valid courses, return an empty dict
-        #     return {}
-        # for course in content:  # Find the current enrollment term
-        #     try:
-        #         enrollment_term_id = max(enrollment_term_id, int(course["enrollment_term_id"]))
-        #     except:
-        #         pass
 
         # Filter for courses
         result = {}
@@ -205,7 +192,6 @@ class CanvasUtil:
             for i, row in enumerate(csv_reader):
                 if i == 0:
                     for j, val in enumerate(row):
-                        # TODO: change the logic of this to be more robust.
                         if val == "Total Left":
                             column_end_index = j
                             break
@@ -330,9 +316,7 @@ def main():
     # gets list of all courses
     course_names = list(courses.keys())
     print(course_names)
-    # You *must* be of role teacher to see your courses, this can be changed if different roles needed
-    # print("-=- Listing all courses for which you have role: Teacher in current enrollemnt period -=-")
-    print("-=- Listing all courses for which you have role: TA in current enrollemnt period -=-")
+    print(f"-=- Listing all courses for which you have role: {canvas_util.userType} in current enrollment period -=-")
     temp_count = 0
     # iterate over list of courses and print of the choices
     for name in courses:

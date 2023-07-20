@@ -139,13 +139,13 @@ class CanvasWrapper:
                                 # Converts Canvas late info (in seconds) into day value then compares with late policy input list
                                 days_late = math.ceil(sub.seconds_late/86400.0)
                                 if days_late < len(late_policy):
-                                    res[2] = float(res[2]) - late_policy[days_late - 1]
+                                    res[2] = float(res[2]) - (late_policy[days_late - 1] / assn.points_possible * 100)
                                 elif len(late_policy) != 0:
-                                    res[2] = float(res[2]) - late_policy[-1]
+                                    res[2] = float(res[2]) - (late_policy[-1] / assn.points_possible * 100)
                                 else:
                                     print("-=- No late policy specified. No points deducted for late submissions. -=-")
 
-                            print("Score of " + res[0] + ", ID: " + res[1] + " changed from " + str(sub.score) + " to " + str(float(res[2])) + ".")
+                            print("Score of " + res[0] + ", ID: " + res[1] + " changed from " + str(sub.score / assn.points_possible * 100) + " to " + str(float(res[2])) + ".")
                             sub.edit(
                                 comment = {
                                     #Have commented when testing or a lot of comments will appear :(

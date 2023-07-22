@@ -13,6 +13,36 @@ from herptest.env_wrapper import EnvWrapper
 # For testing purposes- turn off when not testing
 testStudent = True
 
+class Rubric:
+    def __init__(self):
+        self.criteria: list[Criterion] = []
+        self.id = ""
+
+    class Criterion:
+        def __init__(self):
+            self.ratings: list[Rating] = []
+            self.id = ""
+
+        class Rating:
+            def __init__(self):
+                self.points = 0
+                self.id = ""
+
+
+class Student:
+    def __init__(self):
+        self.last_name = ""
+        self.first_name = ""
+        self.grade = 0
+        self.rubric: list[(float, str)] = []
+
+    def __str__(self):
+        print(f"Last Name: {self.last_name}")
+        print(f"First Name: {self.last_name}")
+        print(f"ID: {self.id}")
+        print(f"Grade: {self.last_name}")
+        print(f"Rubric: {self.rubric}")
+
 class CanvasWrapper:
     def __init__(self, API_URL, env_path, user_type, token_type="TOKEN"): #Initializes CanvasWrapper object which stores an authenticated CanvasAPI Canvas object
         self.canv_url = API_URL
@@ -24,12 +54,13 @@ class CanvasWrapper:
     # Leave as tbd for later okay Luna	
     # def get_courses(self): #Get all courses with enrollment type of whatever is passed in	
     #     return self.canv.get_courses(enrollment_type=self.userType)	
-    def get_courses(self): #Get all courses with enrollment type of teacher	
+    def get_courses(self): #Get all courses with enrollment type of teacher
         # return self.canv.get_courses(enrollment_type='teacher')	
-        return self.canv.get_courses(enrollment_type=self.userType)
+        return self.canv.get_courses(enrollment_state='active', enrollment_type=self.userType)
     
     def get_assignments(self, course): #Get all assignments in a course using the passed in course ID
         return self.canv.get_course(course).get_assignments()
+    #equivalent to get_assignment_list
 
     def get_students(self, course): #Get all students in a course using the passed in course ID
         students = []
@@ -65,10 +96,14 @@ class CanvasWrapper:
         for assn in self.get_assignments(list(course.id for course in self.get_courses() if course.name == _course)[0]):
             if(assignment == assn.name):
                 allSubmissions = assn.get_submissions()
-                if(assn.use_rubric_for_grading):
-                    print("Downloading Grading rubric")
-                    test = assn.rubric
-                else:
+
+                try:
+                    if(assn.use_rubric_for_grading):
+                        print("Downloading Grading rubric")
+                        test = assn.rubric
+                    else:
+                        print("Does not use a rubric for grading")
+                except:
                     print("Does not use a rubric for grading")
 
                 for subm in allSubmissions:
@@ -113,32 +148,45 @@ class CanvasWrapper:
             if(assignment == assn.name):
                 # Setting up rubric functionality
                 counter = 0
-                print("\nFormat of rubric details:", *assn.rubric_settings, "\nID:", assn.rubric_settings["id"], "\n\n")
-                print(*assn.rubric)
-                criterion = {}
-                for section in assn.rubric:
-                    print(section['id'])
-                    criterion[section['id']] = {
-                        'points' : 0,
-                        'comments' : "Testing Rubric comments",
-                        'ratings' : section['ratings']
-                    }
-                print(*criterion["_8154"])
+                # print("\nFormat of rubric details:", *assn.rubric_settings, "\nID:", assn.rubric_settings["id"], "\n\n")
+                # print(*assn.rubric)
+                # Add attribute use_rubric_for_grading and set to False if not present (prevents exceptions)
+                try:
+                    test = assn.use_rubric_for_grading
+                except:
+                    assn.use_rubric_for_grading = False
+                # Prevents divide by zero error if points_possible not set (defaults to 0)
+                if assn.points_possible == 0:
+                    assn.points_possible = 100
+                if assn.use_rubric_for_grading:
+                    criterion = {}
+                    rating_dict = {}
+                    for section in assn.rubric:
+                        for rating in section["ratings"]:
+                            rating_dict[section['id']] = {float(rating["points"]): rating["id"]}
+
+                        criterion[section['id']] = {
+                            'rating_id': rating_dict[section['id']][float(0)],
+                            'points': 0,
+                            'comments': "Testing Rubric comments"
+                        }
 
                 for sub in assn.get_submissions():
                     for res in results:
                         if(str(sub.user_id) == res[1]):
+                            # If the submission is late, then there 10% off for each day late
+                            # [temporary proof of concept for automatic late penalties]
                             if(sub.late):
                                 # Converts Canvas late info (in seconds) into day value then compares with late policy input list
                                 days_late = math.ceil(sub.seconds_late/86400.0)
                                 if days_late < len(late_policy):
-                                    res[2] = float(res[2]) - late_policy[days_late - 1]
+                                    res[2] = float(res[2]) - (late_policy[days_late - 1])
                                 elif len(late_policy) != 0:
-                                    res[2] = float(res[2]) - late_policy[-1]
+                                    res[2] = float(res[2]) - (late_policy[-1])
                                 else:
                                     print("-=- No late policy specified. No points deducted for late submissions. -=-")
 
-                            print("Score of " + res[0] + ", ID: " + res[1] + " changed from " + str(sub.score) + " to " + str(float(res[2])) + ".")
+                            print("Score of " + res[0] + ", ID: " + res[1] + " changed from " + str(sub.score / assn.points_possible * 100) + " to " + str(float(res[2])) + ".")
                             sub.edit(
                                 comment = {
                                     #Have commented when testing or a lot of comments will appear :(
@@ -155,23 +203,197 @@ class CanvasWrapper:
                             if course == None:
                                 print("Error: valid course could not be found (Check around line 130)!!")
                             else:
-                                rubric = RubricAssessment(self.canv_url, {
-                                    'rubric_association_id' : assn.rubric_settings["id"],
-                                    'id' : counter,
-                                    'artifact_type' : "Submission",
-                                    'rubric_assessment' : {
-                                        'user_id' : 1267749,
-                                        'assessment_type' : "grading"
+                                if assn.use_rubric_for_grading:
+                                    rubric = RubricAssessment(self.canv_url, {
+                                        'id': counter,
+                                        'bookmarked' : True,
+                                        'artifact_type': "Submission",
+                                        'rubric_assessment': {
+                                            'user_id': 1267749,
+                                            'assessment_type': "grading"
                                         }
                                     })
-                                counter = counter + 1
-                                rubric.rubric_assessment.update(criterion)
-                                # print("checking rubric:", rubric.rubric_assessment["_8154"]["points"], rubric.rubric_assessment["_8154"]["comments"])
-                                sub.edit(
-                                    rubric_assessment = {rubric}
-                                )
+                                    counter = counter + 1
+                                    rubric.rubric_assessment.update(criterion)
+                                    print("checking rubric:", assn.rubric_settings)
+                                    sub.edit(
+                                        rubric_assessment={rubric}
+                                    )
+                                    print(rubric.rubric_assessment)
+
+    def get_courses_this_semester(self) -> dict:
+        """
+        Get dictionary (name -> id) of courses in this semester
+        """
+        content = self.get_courses()
+        # Filter for courses
+        result = {}
+        for course in content:
+            try:
+                result[course.name] = int(course.id)
+            except:
+                pass
+        return result
+
+    def get_section_ids(self, course_id: str) -> list:
+        """
+        Get a list of all section IDs in a specific course
+        """
+        section_ids = []
+        for course in self.get_courses():
+            if course.id == course_id:
+                    for section in course.get_sections():
+                        section_ids.append(section.id)
+        return section_ids
+
+    def get_assignment_id_by_name(self, course_id: str, assignment_name: str) -> str:
+        """
+        Get the id of the first assignment with a name that matches the input
+        """
+        for course in self.canv.get_course(course_id):
+            for assignment in course.get_assignments():
+                if str(assignment.name).lower().count(assignment_name.lower()):
+                    print(f"| Found assignment: {assignment.name}")
+                    return str(assignment.id)
+
+        raise Exception("ERROR: No matching assignment found!")
+
+    def get_assignment_list(self, course_id: str) -> dict:
+        """
+        Get the list of assignments for the specified course id
+        """
+        course = self.canv.get_course(course_id)
+        assignments = []
+        for assns in course.get_assignments():
+            assignments.append(assns)
+
+        assignment_list = {}
+        for assignment in assignments:
+            #print(f"| Found assignment: {assignment['name']},{assignment['id']}")
+            assignment_list[assignment.name] = assignment.id
+
+        if len(assignment_list) == 0:
+            raise Exception("ERROR: No assignments found!")
+
+        return assignment_list
+
+    def get_student_ids_by_section(self, course_id: str, section_id: str, results: dict):
+        """
+        Get list of students from a particular section (by Canvas supplied Section ID) and store them in the dictionary
+        """
+
+        section = self.canv.get_course(course_id).get_section(section_id)
+        student_ids = []
+        if section.students is not None:
+            for student in section.students:
+                results[str(student.name).lower()] = student.id
+
+    def get_rubric_id(self, course_id: str, assignment_id: str) -> str:
+        assignment = self.canv.get_course(course_id).get_assignment(assignment_id)
+        return assignment.rubric_settings.id
+
+    def generate_rubric(self, course_id: str, rubric_id: str) -> Rubric:
+        result_rubric = Rubric()
+        result_rubric.id = rubric_id
+
+        content = self.canv.get_course(course_id).get_rubric(rubric_id)
+
+        criteria_data = content.data
+
+        for criterion in criteria_data:
+            temp_criterion = Rubric.Criterion()
+            temp_criterion.id = criterion.id
+            rating_data = criterion.ratings
+
+            for rating in rating_data:
+                temp_rating = Rubric.Criterion.Rating()
+                temp_rating.id = rating.id
+                temp_rating.points = float(rating.points)
+                temp_criterion.ratings.append(temp_rating)
+
+            result_rubric.criteria.append(temp_criterion)
+
+        return result_rubric
+
+    def populate_students_from_csv(self, csv_path: str) -> list:
+        students = []
+        with open(csv_path) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            column_end_index = -1
+            for i, row in enumerate(csv_reader):
+                if i == 0:
+                    for j, val in enumerate(row):
+                        if val == "Total Left":
+                            column_end_index = j
+                            break
+                else:
+                    student = Student()
+                    name = str(row[0]).split(',')
+                    student.last_name = name[0].strip()
+                    student.first_name = name[1].strip()
+                    for i in range(2, column_end_index, 2):
+                        try:
+                            grade = float(row[i])
+                        except:
+                            grade = 0
+                        student.rubric.append((grade, row[i + 1]))
+                    students.append(student)
+        return students
+
+    def upload_grades(self, course_id: str, user_ids: dict, assignment_id: str, students_from_file: list,
+                      rubric: Rubric):
+        counter = 0
+
+        for student in students_from_file:
+            student_name = f"{student.first_name} {student.last_name}".lower()
+
+            if student_name in user_ids:
+
+                content = self.canv.get_course(course_id).get_assignment(assignment_id).get_submission(user_ids[student_name])
+
+                # PROMPT WHEN OVERWRITING GRADES
+                if content.grade is not None:
+                    print(f"{student_name}: grade not null!")
+                    # print("Confirm grade replacement with 'Y'.")
+                    # if input().lower() != 'y':
+                    #     sys.exit(0)
+                    print(f"replacing grade of {student_name}")
+
+                payload = {}
+
+                if len(student.rubric) != len(rubric.criteria):
+                    raise Exception("Criteria length mismatch!"+str(len(student.rubric))+"!="+str(len(rubric.criteria)))
+
+                for i, criterion in enumerate(rubric.criteria):
+                    payload[f"rubric_assessment.{criterion.id}.points"] = student.rubric[i][0]
+                    payload[f"rubric_assessment.{criterion.id}.comments"] = str(student.rubric[i][1])
+                    rating_id_chosen = ""
+                    for j, rating in enumerate(criterion.ratings):
+                        if criterion.ratings[j].points <= student.rubric[i][0]:
+                            rating_id_chosen = criterion.ratings[j].id
+                            break
+                    payload[f"rubric_assessment.{criterion.id}.rating_id"] = rating_id_chosen
+
+                self.canv.get_course(course_id).get_assignment(assignment_id).get_submission(user_ids[student_name]).edit(params=payload)
 
 
+                counter = counter + 1
+                print(f"{counter} student(s) graded.")
+
+    def process_and_upload_file(self, course_id: str, assignment_name: str, csv_path: str):
+        section_ids = self.get_section_ids(course_id)
+        user_ids = {}
+        for section in section_ids:
+            self.get_student_ids_by_section(course_id, section, user_ids)
+
+        try:
+            assignment_id = self.get_assignment_id_by_name(course_id, assignment_name)
+            students_from_file = self.populate_students_from_csv(csv_path)
+            rubric_id = self.get_rubric_id(course_id, assignment_id)
+            rubric_format = self.generate_rubric(course_id, rubric_id)
+            self.upload_grades(course_id, user_ids, assignment_id, students_from_file, rubric_format)
+        except:
+            return -1
 def env_setup():
     e = EnvWrapper()
     print("-=- Welcome to the Canvas API Key setup tool, you will be prompted to enter your Canvas key and your Canvas Beta key -=-")

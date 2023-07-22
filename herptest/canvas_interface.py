@@ -102,19 +102,19 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
 
 
     def setupCanvasInstances(self):
-        self.canvasUtil = None
+        self.canvasWrapper = None
         self.canvasPath = "https://ufl.instructure.com/api/v1"
         self.canvasBasePath = "https://ufl.instructure.com"
         self.dotEnvPath = "canvas.env"
         self.tokenType = "TOKEN"
         self.established = False
         try:
-            userType = pyautogui.confirm('View as a TA or a Teacher?', 'Select TA or Teacher', ['TA', 'Teacher']).lower()
+            self.userType = pyautogui.confirm('View as a TA or a Teacher?', 'Select TA or Teacher', ['TA', 'Teacher']).lower()
             #userType = "TA"
 
-            self.canvasUtil = grade_csv_uploader.CanvasUtil(self.canvasPath, self.dotEnvPath, self.tokenType, userType)
+            # self.canvasUtil = grade_csv_uploader.CanvasUtil(self.canvasPath, self.dotEnvPath, self.tokenType, self.userType)
 
-            self.canvasWrapper = canvas.CanvasWrapper(self.canvasBasePath, self.dotEnvPath, userType)
+            self.canvasWrapper = canvas.CanvasWrapper(self.canvasBasePath, self.dotEnvPath, self.userType)
         except:
             print("Something went wrong, either the canvas.env does not exist or it does not contain a token with the type TOKEN")
             self.canvasEnvMissing = True
@@ -130,7 +130,7 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
 
         if not self.courseDict:
             #this only activates once per instance (to avoid slow loading times)
-            self.courseDict = self.canvasUtil.get_courses_this_semester() # dictionary with keys:course name, values:course id
+            self.courseDict = self.canvasWrapper.get_courses_this_semester() # dictionary with keys:course name, values:course id
 
         if len(self.courseDict.keys()) == 0:
             #No active courses available
@@ -168,7 +168,7 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         
         if course not in self.assignmentDict.keys() or not self.assignmentDict[course]:
             #cache the assignments for each course to reduce wait times
-            self.assignmentDict[course] = self.canvasUtil.get_assignment_list(self.courseDict[course])
+            self.assignmentDict[course] = self.canvasWrapper.get_assignment_list(self.courseDict[course])
         
         assignments = self.assignmentDict[course]
 

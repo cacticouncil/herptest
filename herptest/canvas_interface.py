@@ -168,9 +168,19 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         
         if course not in self.assignmentDict.keys() or not self.assignmentDict[course]:
             #cache the assignments for each course to reduce wait times
-            self.assignmentDict[course] = self.canvasWrapper.get_assignment_list(self.courseDict[course])
-        
-        assignments = self.assignmentDict[course]
+            try:
+                self.assignmentDict[course] = self.canvasWrapper.get_assignment_list(self.courseDict[course])
+            except:
+                late_dialog = QtWidgets.QMessageBox()
+                late_dialog.setText('Please add an assignment to this course on Canvas or choose another course.')
+                late_dialog.setWindowTitle('Selected course has no assignments!')
+                late_dialog.exec_()
+
+
+        try:
+            assignments = self.assignmentDict[course]
+        except:
+            print("ERROR: No assignments found!")
 
         backSelect = QtGui.QStandardItem("<- Return to Courses")
         backSelect.setEditable(False)   

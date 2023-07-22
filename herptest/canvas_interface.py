@@ -78,7 +78,13 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
             courseIdIndex = self.activeModel.itemFromIndex(index.siblingAtColumn(1))
             self.currentCourseId = courseIdIndex.text()
 
-            self.showAssignments(courseNameIndex)
+            try:
+                self.showAssignments(courseNameIndex)
+            except:
+                late_dialog = QtWidgets.QMessageBox()
+                late_dialog.setText('Please add an assignment to this course on Canvas or choose another course.')
+                late_dialog.setWindowTitle('Selected course has no assignments!')
+                late_dialog.exec_()
         elif self.mode == "assignments":
             assn = self.activeModel.itemFromIndex(index.siblingAtColumn(0)).text()
             if assn.find("<-") == -1:
@@ -168,19 +174,10 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         
         if course not in self.assignmentDict.keys() or not self.assignmentDict[course]:
             #cache the assignments for each course to reduce wait times
-            try:
-                self.assignmentDict[course] = self.canvasWrapper.get_assignment_list(self.courseDict[course])
-            except:
-                late_dialog = QtWidgets.QMessageBox()
-                late_dialog.setText('Please add an assignment to this course on Canvas or choose another course.')
-                late_dialog.setWindowTitle('Selected course has no assignments!')
-                late_dialog.exec_()
 
+            self.assignmentDict[course] = self.canvasWrapper.get_assignment_list(self.courseDict[course])
 
-        try:
-            assignments = self.assignmentDict[course]
-        except:
-            print("ERROR: No assignments found!")
+        assignments = self.assignmentDict[course]
 
         backSelect = QtGui.QStandardItem("<- Return to Courses")
         backSelect.setEditable(False)   

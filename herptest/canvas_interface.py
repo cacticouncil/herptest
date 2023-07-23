@@ -8,9 +8,10 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
     #A generic interface for canvas assignments/ courses without any controls
     # used in autopullElmaPage and canvasUploadPage
 
-    def __init__(self):
+    def __init__(self, user_type):
         super().__init__()
 
+        #self.userType = user_type
         self.courseDict = None
         self.assignmentDict = {}
         #init trackers, updating this makes it simpler to pass this data to upload
@@ -19,7 +20,7 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         self.currentAssignment = None
         self.assignmentReady = False
         self.canvasEnvMissing = False
-        self.setupCanvasInstances()
+        self.setupCanvasInstances(user_type=user_type)
 
         if self.canvasEnvMissing:
             #setupCanvasInstances sets this true if there was an issue with setup, show the dialog to fetch the env
@@ -107,16 +108,17 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         pass
 
 
-    def setupCanvasInstances(self):
+    def setupCanvasInstances(self, user_type):
         self.canvasWrapper = None
         self.canvasPath = "https://ufl.instructure.com/api/v1"
         self.canvasBasePath = "https://ufl.instructure.com"
         self.dotEnvPath = "canvas.env"
         self.tokenType = "TOKEN"
         self.established = False
+        self.userType = user_type
         try:
-            self.userType = pyautogui.confirm('View as a TA or a Teacher?', 'Select TA or Teacher', ['TA', 'Teacher']).lower()
-            #userType = "TA"
+            # self.userType = pyautogui.confirm('View as a TA or a Teacher?', 'Select TA or Teacher', ['TA', 'Teacher']).lower()
+            # userType = "TA"
 
             # self.canvasUtil = grade_csv_uploader.CanvasUtil(self.canvasPath, self.dotEnvPath, self.tokenType, self.userType)
 

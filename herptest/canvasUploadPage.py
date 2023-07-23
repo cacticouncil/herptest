@@ -5,8 +5,8 @@ from herptest import canvas_interface
 
 class CanvasUploadPage(canvas_interface.AbstractCanvasInterface):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, user_type):
+        super().__init__(user_type=user_type)
 
         self.fileReady = False
 

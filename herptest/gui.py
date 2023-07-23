@@ -1,5 +1,5 @@
 import sys, os
-import time, random, pathlib
+import time, random, pathlib, pyautogui
 from PySide2 import QtCore, QtWidgets, QtGui
 from herptest import homePage, testSuiteCreator, resultsPage, canvasUploadPage, autopullElmaPage, vmPage
 
@@ -9,6 +9,8 @@ def initEnviron():
     os.environ["LIBGL_ALWAYS_INDIRECT"] = "1" #necessary to avoid openGL errors with accessing Windows openGL from WSL
     os.environ["XDG_RUNTIME_DIR"] = "/tmp/herp-runtime" #used by qt for cache
 def initWindow():
+
+    userType = pyautogui.confirm('View as a TA or a Teacher?', 'Select TA or Teacher', ['TA', 'Teacher']).lower()
 
     window = QtWidgets.QMainWindow()
     
@@ -21,9 +23,9 @@ def initWindow():
     # testSuiteCreatorInst = tabContainer.widget(1)
     tabContainer.addTab(resultsPage.ResultsPage(), "Test Results")
     resultsPageInst = tabContainer.widget(1)
-    tabContainer.addTab(canvasUploadPage.CanvasUploadPage(), "Canvas Uploader")
+    tabContainer.addTab(canvasUploadPage.CanvasUploadPage(user_type=userType), "Canvas Uploader")
     canvasUploaderInst = tabContainer.widget(2)
-    tabContainer.addTab(autopullElmaPage.AutopullElmaPage(), "Auto-Pull && ELMA")
+    tabContainer.addTab(autopullElmaPage.AutopullElmaPage(user_type=userType), "Auto-Pull && ELMA")
     elmaInst = tabContainer.widget(3)
     # tabContainer.addTab(vmPage.VmPage(), "VM Config")
     # vmPageInst = tabContainer.widget(5)

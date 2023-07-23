@@ -4,8 +4,8 @@ import numpy as np
 from herptest import canvas_interface
 
 class AutopullElmaPage(canvas_interface.AbstractCanvasInterface):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, user_type):
+        super().__init__(user_type=user_type)
 
         #this will force the download button to be greyed out if false
         self.downloadPossible = True
@@ -14,7 +14,7 @@ class AutopullElmaPage(canvas_interface.AbstractCanvasInterface):
         #this gets called by the createUI method of the parent class
 
         #sets whether the manual download hack is enabled
-        self.automaticDownload = False #this has to happen here, since this method gets called BEFORE the constructor
+        self.automaticDownload = True #this has to happen here, since this method gets called BEFORE the constructor
         self.controls = QtWidgets.QHBoxLayout()
 
         self.downloadBox = QtWidgets.QGroupBox("Download Assignment Submissions")

@@ -150,6 +150,7 @@ class CanvasWrapper:
                 counter = 0
                 # print("\nFormat of rubric details:", *assn.rubric_settings, "\nID:", assn.rubric_settings["id"], "\n\n")
                 # print(*assn.rubric)
+
                 # Add attribute use_rubric_for_grading and set to False if not present (prevents exceptions)
                 try:
                     test = assn.use_rubric_for_grading
@@ -158,6 +159,7 @@ class CanvasWrapper:
                 # Prevents divide by zero error if points_possible not set (defaults to 0)
                 if assn.points_possible == 0:
                     assn.points_possible = 100
+
                 if assn.use_rubric_for_grading:
                     criterion = {}
                     rating_dict = {}
@@ -220,7 +222,7 @@ class CanvasWrapper:
                                         rubric_assessment={rubric}
                                     )
                                     print(rubric.rubric_assessment)
-
+                                    
     def get_courses_this_semester(self) -> dict:
         """
         Get dictionary (name -> id) of courses in this semester
@@ -297,7 +299,6 @@ class CanvasWrapper:
         result_rubric.id = rubric_id
 
         content = self.canv.get_course(course_id).get_rubric(rubric_id)
-
         criteria_data = content.data
 
         for criterion in criteria_data:

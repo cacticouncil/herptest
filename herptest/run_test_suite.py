@@ -39,6 +39,7 @@ def parse_arguments():
     return config
 
 
+
 def build_project(source_root, build_root, build_cfg):
     result_error = None
     error_output = None
@@ -108,6 +109,7 @@ def build_project(source_root, build_root, build_cfg):
     return result_error, error_output
 
 
+
 def run_suite_tests(subject, framework, cfg):
     results = []
     exception_sets = {}
@@ -147,6 +149,7 @@ def run_suite_tests(subject, framework, cfg):
         results.append((test_set.name, score, data_set))
 
     return results, exception_sets
+
 
 
 def run_test_set(test_set, subject, framework, cfg):
@@ -218,6 +221,7 @@ def run_test_set(test_set, subject, framework, cfg):
     return data_set, score / num_of_tests, penalty_totals, exception_list
 
 
+
 # Build the environment components (only need to do this once.)
 def prepare_and_init_framework(cfg):
     if cfg.build.prep_cmd or cfg.build.compile_cmd or cfg.build.post_cmd:
@@ -233,6 +237,8 @@ def prepare_and_init_framework(cfg):
     framework_data = cfg.initialize_framework()
     logging.info("done.\n")
     return framework_data
+
+
 
 # For each submission, copy the base files, then the submission, into the destination folder.
 def prepare_and_test_submission(submission, framework_context, cfg):
@@ -289,6 +295,7 @@ def prepare_and_test_submission(submission, framework_context, cfg):
     return results, exception_sets
 
 
+
 def main():
     dill.settings['recurse']=True
     runtime = parse_arguments()
@@ -333,14 +340,6 @@ def main():
         logging.info("Warning: couldn't open summary file for writing: [%s]" % summary_path)
 
     # Initialize the framework / get any important info
-#    with futures.ProcessPoolExecutor() as executor:
-#        try:
-#            future = executor.submit(prepare_and_init_framework, cfg)
-#            framework_context = future.result()
-            # This is a fatal error; if we can't initalize the framework, we should stop here.
-#        except Exception as e:
-#            sys.stderr.write("Error initializing framework - %s: %s. Exiting.\n" % (type(e).__name__, e))
-#            exit()
     framework_context = prepare_and_init_framework(cfg)
 
     # Close general log file and move on to student-specific logs.
@@ -405,6 +404,7 @@ def main():
     logging.info("Framework shutdown\n")
     # Return to where we started at.
     os.chdir(starting_dir)
+
 
 
 if __name__ == "__main__":

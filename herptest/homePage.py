@@ -15,10 +15,14 @@ class HomePage(QtWidgets.QWidget):
 
         self.setLayout(self.layout)
 
+
+
     def setResultsFunction(self, raiseResultsTab, args):
         #for convenience
         self.raiseResultsTab = raiseResultsTab
         self.raiseResultsTabArgs = args
+
+
 
     def createProjectPicker(self):
         self.projectPicker = QtWidgets.QGridLayout()
@@ -36,6 +40,8 @@ class HomePage(QtWidgets.QWidget):
         self.layout.addLayout(self.projectPicker)
         self.layout.setAlignment(self.projectPicker, QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
 
+
+
     def createTestSuitePicker(self):
         self.testSuitePicker = QtWidgets.QGridLayout()
         self.testSuiteLabel = QtWidgets.QLabel("Path to folder containing test suite:")
@@ -52,6 +58,8 @@ class HomePage(QtWidgets.QWidget):
         self.layout.addLayout(self.testSuitePicker)
         self.layout.setAlignment(self.testSuitePicker, QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
 
+
+
     def projectFilePicker(self):
         dialog = QtWidgets.QFileDialog(self)
         dialog.setFileMode(QtWidgets.QFileDialog.Directory)
@@ -62,6 +70,8 @@ class HomePage(QtWidgets.QWidget):
         if dialog.exec_():
             self.projectPath.setText(dialog.selectedFiles()[0])
 
+
+
     def testSuiteFilePicker(self):
         dialog = QtWidgets.QFileDialog(self)
         dialog.setFileMode(QtWidgets.QFileDialog.Directory)
@@ -71,6 +81,8 @@ class HomePage(QtWidgets.QWidget):
 
         if dialog.exec_():
             self.testSuitePath.setText(dialog.selectedFiles()[0])
+
+
 
     def createTestOutputFields(self):
         #generate the bottom part of the UI
@@ -109,14 +121,20 @@ class HomePage(QtWidgets.QWidget):
         self.outputFields.addLayout(self.testButtons)
         self.layout.addLayout(self.outputFields)
 
+
+
     def hideResultsButton(self):
         self.showResults.hide()
     
+
+
     def showResultsButton(self):
         #remove and re-add the widget to correct the order
         self.showResults.show()
         self.testButtons.removeWidget(self.showResults)
         self.testButtons.insertWidget(1,self.showResults)
+
+
 
     def convertPath(self, path):
         # Convert WSL paths to Windows paths using WSL's built in wslpath command
@@ -127,14 +145,12 @@ class HomePage(QtWidgets.QWidget):
         windows_path = windows_path[:len(windows_path) - 1]
         return windows_path
 
-    def runTestSuite(self):
-        #print("Running test suite from: \n" + self.testSuitePath.text())
-        #print("on projects from: \n" + self.projectPath.text())
-        self.hideResultsButton()
 
+
+    def runTestSuite(self):
+        self.hideResultsButton()
         # Get if it is a VM or not
         isVM = self.isVM.isChecked()
-
         #move to the right test suite path
         os.chdir(self.testSuitePath.text())
 
@@ -183,13 +199,14 @@ class HomePage(QtWidgets.QWidget):
                         msgBox.setWindowTitle("Error running herp")
                         msgBox.setText("Error running herp! Please ensure that it is installed on Command Prompt.")
                         msgBox.exec_()
-
                 break
-
+            
         self.runTests.setText("Run Tests")
         self.runTests.setEnabled(True)  
         #only show results button if the process exited successfully
         self.showResultsButton()
+
+
 
     def switchToResults(self):
         #pass the filepath of the results csv and the raise function

@@ -21,6 +21,8 @@ class TestSuiteCreator(QtWidgets.QWidget):
             self.startToken = startToken
             self.endToken = endToken
 
+
+
     def __init__(self, defaultTestValue=10, defaultMatchType=0, defaultStartToken=0, defaultEndToken=0):
         super().__init__()
 
@@ -45,6 +47,8 @@ class TestSuiteCreator(QtWidgets.QWidget):
         self.createBreadcrumb()
         self.setLayout(self.containerLayout)
 
+
+
     def createBreadcrumb(self):
         self.breadcrumbBar = QtWidgets.QStatusBar()
         self.breadcrumb = QtWidgets.QLabel()
@@ -61,11 +65,15 @@ class TestSuiteCreator(QtWidgets.QWidget):
         self.updateBreadcrumb()
         self.updateTotalPoints()
 
+
+
     def updateBreadcrumb(self):
         if not self.savePath:
             self.breadcrumb.setText("No test case file saved...")
         else:
             self.breadcrumb.setText("Active Test Suite: " + os.path.basename(self.savePath))
+
+
 
     def updateTotalPoints(self):
         #make sure that the current test case gets updated, will not call on Add Test Case widget
@@ -76,18 +84,25 @@ class TestSuiteCreator(QtWidgets.QWidget):
         for index in range(0, self.testCaseStack.count()-1):
             total += self.testCaseStack.widget(index).points
         self.totalPoints.setText(str(total) + " Total Points | " + str(self.testCaseStack.count()-1) + " test cases")
-        
+
+
+
     def updateMatchType(self, index):
         # match type converted to values used in tests.py on test suite code generation
         self.testCaseStack.widget(self.testCaseStack.currentIndex()).matchType = index
         self.checkEnableWidgets()
         
 
+
     def updateStartToken(self, token):
         self.testCaseStack.widget(self.testCaseStack.currentIndex()).startToken = token
 
+
+
     def updateEndToken(self, token):
         self.testCaseStack.widget(self.testCaseStack.currentIndex()).endToken = token
+
+
 
     def createMenuBar(self):
         self.menuBar = QtWidgets.QMenuBar()
@@ -114,6 +129,7 @@ class TestSuiteCreator(QtWidgets.QWidget):
       
         self.layout.addWidget(self.menuBar)
         self.layout.setAlignment(self.menuBar, QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+
 
 
     def createTestCaseContainer(self):
@@ -185,6 +201,8 @@ class TestSuiteCreator(QtWidgets.QWidget):
 
         self.layout.addWidget(self.testCaseStack)
 
+
+
     def generateTestSuiteContainer(self):
         self.generateTestSuiteButton = QtWidgets.QPushButton("Generate Test Suite")
         self.generateTestSuiteButton.setFixedWidth(200)
@@ -193,6 +211,7 @@ class TestSuiteCreator(QtWidgets.QWidget):
         self.layout.addWidget(self.generateTestSuiteButton)
         self.layout.setAlignment(self.generateTestSuiteButton, QtCore.Qt.AlignRight)
         
+
     
     def solutionFilePicker(self):
         newSolutionFile, _ = QtWidgets.QFileDialog.getOpenFileName(self, caption="Select Solution Code", filter="Python Files (*.py)")
@@ -266,6 +285,8 @@ class TestSuiteCreator(QtWidgets.QWidget):
 
                 self.updateBreadcrumb()
 
+
+
     def writeTestSuiteJson(self):
         data = {}
         #test suite solution file only written when generating test suite (not saving)
@@ -291,6 +312,8 @@ class TestSuiteCreator(QtWidgets.QWidget):
         with open(self.savePath, 'w') as outfile: 
             json.dump(data, outfile)
 
+
+
     def checkEnableWidgets(self):
         if(self.testCaseStack.count() > 1):
             self.generateTestSuiteButton.setEnabled(True)
@@ -308,6 +331,8 @@ class TestSuiteCreator(QtWidgets.QWidget):
             self.testCasePoints.setDisabled(True)
             self.matchTypeComboBox.setDisabled(True)
         
+
+
     def changeTestCase(self, index):
         if index == self.testCaseComboBox.count()-1:
             self.addTestCase()
@@ -319,6 +344,8 @@ class TestSuiteCreator(QtWidgets.QWidget):
             self.startToken.setValue(self.testCaseStack.widget(index).startToken)
             self.endToken.setValue(self.testCaseStack.widget(index).endToken)
             self.checkEnableWidgets()
+
+
 
     def addTestCase(self):
         testCaseTitle, ok = QtWidgets.QInputDialog().getText(self, "Test Case Name", "Enter test case name:", QtWidgets.QLineEdit.Normal) 
@@ -335,8 +362,8 @@ class TestSuiteCreator(QtWidgets.QWidget):
             self.checkEnableWidgets()
                 
 
-    def removeTestCase(self, index):
 
+    def removeTestCase(self, index):
         # prevents deleting Add Test Case item
         if self.testCaseComboBox.count() == 1:
             return
@@ -360,8 +387,8 @@ class TestSuiteCreator(QtWidgets.QWidget):
             self.checkEnableWidgets()
 
 
-    def renameTestCase(self, index):
 
+    def renameTestCase(self, index):
         if self.testCaseStack.currentIndex() == self.testCaseStack.count() - 1:
             return
 
@@ -370,6 +397,8 @@ class TestSuiteCreator(QtWidgets.QWidget):
         if ok and dialog:
             self.testCaseComboBox.setItemText(index, dialog)
             self.testCaseStack.widget(index).name = dialog
+
+
 
     def newTestSuite(self):
         if self.testCaseComboBox.count() == 1:
@@ -395,6 +424,8 @@ class TestSuiteCreator(QtWidgets.QWidget):
         self.checkEnableWidgets()
         self.updateTotalPoints()
         self.updateBreadcrumb()
+
+
 
     def openTestSuite(self):
         testCasesPath, _ = QtWidgets.QFileDialog.getOpenFileName(self, caption="Select Test Cases File", filter="JSON Files (*.json)")
@@ -427,6 +458,8 @@ class TestSuiteCreator(QtWidgets.QWidget):
             self.checkEnableWidgets()
             self.updateTotalPoints()
             self.updateBreadcrumb()
+
+
 
     def saveTestSuite(self, saveAs=False):
         if(self.testCaseStack.count() == 1):

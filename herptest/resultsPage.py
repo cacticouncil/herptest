@@ -9,6 +9,8 @@ class ResultsTableModel(QtCore.QAbstractTableModel):
         QtCore.QAbstractTableModel.__init__(self)
         self.loadData(data)
 
+
+
     def loadData(self, data):
         if len(data) > 1:
             self.headers = data[0]
@@ -17,11 +19,17 @@ class ResultsTableModel(QtCore.QAbstractTableModel):
             self.headers = ["No Data"]
             self.dataDict = []
 
+
+
     def rowCount(self, parent=QtCore.QModelIndex()):
         return len(self.dataDict)
 
+
+
     def columnCount(self, parent=QtCore.QModelIndex()):
         return len(self.headers)
+
+
 
     def headerData(self, section, orientation, role):
         if role != QtCore.Qt.DisplayRole:
@@ -31,19 +39,21 @@ class ResultsTableModel(QtCore.QAbstractTableModel):
         else:
             return "{}".format(section)
 
+
+
     def data(self, index, role=QtCore.Qt.DisplayRole):
         column = index.column()
         row = index.row()
 
         if role == QtCore.Qt.DisplayRole:
             return self.dataDict[row][column]
-
         elif role == QtCore.Qt.BackgroundRole:
             return QtGui.QColor(QtCore.Qt.white)
         elif role == QtCore.Qt.TextAlignmentRole:
             return QtCore.Qt.AlignRight
-
         return None
+
+
 
 class StatsModel(QtCore.QAbstractTableModel):
     #used as a model for the contents of individual student result.csv
@@ -51,6 +61,8 @@ class StatsModel(QtCore.QAbstractTableModel):
         QtCore.QAbstractTableModel.__init__(self)
         self.calculateStats(data)
         self.headers = ["Test Statistics", ""]
+
+
 
     def calculateStats(self, data):
         self.dataDict = []
@@ -69,11 +81,17 @@ class StatsModel(QtCore.QAbstractTableModel):
         else:
             self.dataDict.append(["No Data", ""])
 
+
+
     def rowCount(self, parent=QtCore.QModelIndex()):
         return len(self.dataDict)
 
+
+
     def columnCount(self, parent=QtCore.QModelIndex()):
         return 2
+
+
 
     def headerData(self, section, orientation, role):
         if role != QtCore.Qt.DisplayRole:
@@ -83,29 +101,30 @@ class StatsModel(QtCore.QAbstractTableModel):
         else:
             return ""
 
+
+
     def data(self, index, role=QtCore.Qt.DisplayRole):
         column = index.column()
         row = index.row()
 
         if role == QtCore.Qt.DisplayRole:
             return self.dataDict[row][column]
-
         elif role == QtCore.Qt.BackgroundRole:
             return QtGui.QColor(QtCore.Qt.white)
         elif role == QtCore.Qt.TextAlignmentRole:
             return QtCore.Qt.AlignRight
-
         return None
+
+
 
 class ResultsPage(QtWidgets.QWidget):
     #a flexible interface page to view the summary.csv and linked student results in one view with stats
     def __init__(self):
         super().__init__()
 
-        
         #create the page with no data to start, this gets regenerated when new data comes in
         data = []
-        
+
         #create the top left results table
         self.resultsContainer = QtWidgets.QHBoxLayout()
 
@@ -176,10 +195,10 @@ class ResultsPage(QtWidgets.QWidget):
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.addLayout(self.resultsContainer)
         self.layout.addLayout(self.statsContainer)
-
         
         self.setLayout(self.layout)
     
+
 
     def dataSourceFilePicker(self):
         dialog = QtWidgets.QFileDialog(self)
@@ -190,10 +209,14 @@ class ResultsPage(QtWidgets.QWidget):
         if dialog.exec_():
             self.dataSource.setText(dialog.selectedFiles()[0])
 
+
+
     def handleLoad(self):
         if self.dataSource.text() == "...":
             self.dataSourceFilePicker()
         self.loadResults(self.dataSource.text())
+
+
 
     def loadResults(self, resultsPath, raiseFunc= lambda x: None, raiseArgs= None):
         self.dataSource.setText(resultsPath)#useful if this is called externally
@@ -209,7 +232,6 @@ class ResultsPage(QtWidgets.QWidget):
                 else:
                     data.append(row + ['->'])
 
-
         #create the new data model and plug it into the view, resize
         self.model = ResultsTableModel(data)
         self.tableView.setModel(self.model)
@@ -223,6 +245,8 @@ class ResultsPage(QtWidgets.QWidget):
             self.statsView.resizeColumnToContents(i)
 
         raiseFunc(raiseArgs)
+
+
 
     def showDetails(self, studentName, studentLMS):
         #this gets triggered to replace the detailed student results page
@@ -264,13 +288,14 @@ class ResultsPage(QtWidgets.QWidget):
                     #keep processing
                     data.append(row)
                     numTestCases -= 1
-
         
         self.detailsModel = ResultsTableModel(data)
         self.detailsView.setModel(self.detailsModel)
         for i in range(0,self.detailsModel.columnCount()):
             self.detailsView.resizeColumnToContents(i)
         self.currentStatus.setText(f"Showing Details for {studentDirName}")
+
+
 
     def handleSelection(self, index):
         #detects when we should change the details view

@@ -16,6 +16,7 @@ def env_setup():
     m.populate_env()
 
 
+
 # handle command line args
 def parse_arguments():
     parser = argparse.ArgumentParser(description='A program to run Stanford moss on student submitted projects. Operates by taking in folder of base files and folders of submissions, positional arguemnts: language, basefiles, submissions')
@@ -28,6 +29,7 @@ def parse_arguments():
     config = parser.parse_args(sys.argv[1:])
     config.logformat = "%(message)s"
     return config
+
 
 
 # Driver function for run_moss, invokes necessary commands to run moss on submissions
@@ -55,6 +57,7 @@ def main():
     # sends files and saves logs locally from moss
     moss_obj.send_files()
     moss_obj.save_files()
+
 
 
 if __name__ == "__main__":

@@ -10,10 +10,6 @@ import sys
 import argparse
 from herptest.env_wrapper import EnvWrapper
 
-# For testing purposes- turn off when not testing
-testStudent = True
-
-
 class Rubric:
     def __init__(self):
         self.criteria: list[Criterion] = []
@@ -28,6 +24,7 @@ class Rubric:
             def __init__(self):
                 self.points = 0
                 self.id = ""
+
 
 
 class Student:
@@ -55,14 +52,17 @@ class CanvasWrapper:
         self.userType = user_type
 
 
+
     # Chosen by User at boot (options are 'teacher' and 'ta') 
     def get_courses(self):
         return self.canv.get_courses(enrollment_type=self.userType)
     
 
+
     #Get all assignments in a course using the passed-in course ID
     def get_assignments(self, course):
         return self.canv.get_course(course).get_assignments()
+
 
 
     #Get all students in a course using the passed in course ID
@@ -71,6 +71,7 @@ class CanvasWrapper:
         for student in self.canv.get_course(course).get_users(enrollment_type='student'):
             students.append(student.name.split(' ') + [student.id])
         return students
+
 
 
     #Get the results CSV in the format [['studentname', student_ID, grade]]
@@ -83,6 +84,7 @@ class CanvasWrapper:
                 for row in csv_reader:
                     results.append(row)
         return results
+
 
 
     #Get submissions.zip download link from a given course assignment using the passed in course name and assignment name
@@ -132,6 +134,7 @@ class CanvasWrapper:
                         shutil.make_archive("submissions", 'zip', subdir)
                 return assn.submissions_download_url
             
+
             
     #Automatically download submissions.zip from a course assignment (course name, assignment name) to the given path
     def download_submissions(self, _course, assignment, path):
@@ -141,6 +144,7 @@ class CanvasWrapper:
                 for subm in allSubmissions:
                     for attch in subm.attachments:
                         print(attch.url)
+
 
 
     #Push grades to Canvas assignment (course name, assignment name) using the summary.csv from the given path
@@ -229,6 +233,7 @@ class CanvasWrapper:
                                     print(rubric.rubric_assessment)
 
 
+
     def get_courses_this_semester(self) -> dict:
         """
         Get dictionary (name -> id) of courses in this semester
@@ -244,6 +249,7 @@ class CanvasWrapper:
         return result
 
 
+
     def get_section_ids(self, course_id: str) -> list:
         """
         Get a list of all section IDs in a specific course
@@ -256,6 +262,7 @@ class CanvasWrapper:
         return section_ids
 
 
+
     def get_assignment_id_by_name(self, course_id: str, assignment_name: str) -> str:
         """
         Get the id of the first assignment with a name that matches the input
@@ -266,6 +273,7 @@ class CanvasWrapper:
                     print(f"| Found assignment: {assignment.name}")
                     return str(assignment.id)
         raise Exception("ERROR: No matching assignment found!")
+
 
 
     def get_assignment_list(self, course_id: str) -> dict:
@@ -287,6 +295,7 @@ class CanvasWrapper:
         return assignment_list
     
 
+
     def get_student_ids_by_section(self, course_id: str, section_id: str, results: dict):
         """
         Get list of students from a particular section (by Canvas supplied Section ID) and store them in the dictionary
@@ -298,9 +307,11 @@ class CanvasWrapper:
                 results[str(student.name).lower()] = student.id
 
 
+
     def get_rubric_id(self, course_id: str, assignment_id: str) -> str:
         assignment = self.canv.get_course(course_id).get_assignment(assignment_id)
         return assignment.rubric_settings.id
+
 
 
     def generate_rubric(self, course_id: str, rubric_id: str) -> Rubric:
@@ -323,6 +334,7 @@ class CanvasWrapper:
 
             result_rubric.criteria.append(temp_criterion)
         return result_rubric
+
 
 
     def populate_students_from_csv(self, csv_path: str) -> list:
@@ -349,6 +361,7 @@ class CanvasWrapper:
                         student.rubric.append((grade, row[i + 1]))
                     students.append(student)
         return students
+
 
 
     def upload_grades(self, course_id: str, user_ids: dict, assignment_id: str, students_from_file: list, rubric: Rubric):
@@ -384,6 +397,7 @@ class CanvasWrapper:
                 print(f"{counter} student(s) graded.")
 
 
+
     def process_and_upload_file(self, course_id: str, assignment_name: str, csv_path: str):
         section_ids = self.get_section_ids(course_id)
         user_ids = {}
@@ -400,11 +414,13 @@ class CanvasWrapper:
             return -1
         
 
+
 def env_setup():
     e = EnvWrapper()
     print("-=- Welcome to the Canvas API Key setup tool, you will be prompted to enter your Canvas key and your Canvas Beta key -=-")
     print("-=- If you only wish to use one of these keys, you can leave the other blank / submit any text. To reinstall, run this command again -=-")
     e.populate_env()
+
 
 
 def parse_arguments():
@@ -414,6 +430,7 @@ def parse_arguments():
     config = parser.parse_args(sys.argv[1:])
     config.logformat = "%(message)s"
     return config
+
 
 
 def main():
@@ -525,6 +542,8 @@ def main():
         dl_link = canvas.get_download_link(course_name, assn_name)
         print("Downloaded successfully.")
         print("-=- Shutting down -=-")
+
+
 
 if __name__ == "__main__":
     main()

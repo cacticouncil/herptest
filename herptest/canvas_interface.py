@@ -10,10 +10,9 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
 
     def __init__(self, user_type):
         super().__init__()
-
-        #self.userType = user_type
         self.courseDict = None
         self.assignmentDict = {}
+
         #init trackers, updating this makes it simpler to pass this data to upload
         self.currentCourse = None
         self.currentCourseId = None
@@ -32,10 +31,7 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
 
 
 
-
-    def handleEnvLoaded(self):
-        #print("callback success")
-        
+    def handleEnvLoaded(self):        
         QtWidgets.QWidget().setLayout(self.layout())
         self.createUI()
         
@@ -45,17 +41,12 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         #create the generic canvas ui
         self.layout = QtWidgets.QVBoxLayout()
         self.title = QtWidgets.QLabel()
-
         self.containerView = QtWidgets.QTreeView()
         self.showCourses() 
-        
         self.containerView.clicked[QtCore.QModelIndex].connect(self.handleSelection)
-
         self.layout.addWidget(self.title)
         self.layout.addWidget(self.containerView)
-
         self.createControls()
-
         self.setLayout(self.layout)
 
     def createControls(self):
@@ -67,11 +58,11 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         item = self.activeModel.itemFromIndex(index)
         if item.text().find("<-") != -1:
             #go back to the courses page
-            
             self.currentCourse = None
             self.currentAssignment = None
             self.showCourses()
             self.assignmentReady = False
+
         elif item.text().find("->") != -1:
             #go down a level
             courseNameIndex = self.activeModel.itemFromIndex(index.siblingAtColumn(0))
@@ -98,8 +89,6 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
                 self.assignmentReady = False
         elif self.mode == "courses":
             self.currentCourse = self.activeModel.itemFromIndex(index.siblingAtColumn(0)).text()
-        #print("current course: " + str(self.currentCourse))
-        #print("current assignment: " + str(self.currentAssignment))
         self.onSelect()
 
     def onSelect(self):
@@ -117,11 +106,6 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         self.established = False
         self.userType = user_type
         try:
-            # self.userType = pyautogui.confirm('View as a TA or a Teacher?', 'Select TA or Teacher', ['TA', 'Teacher']).lower()
-            # userType = "TA"
-
-            # self.canvasUtil = grade_csv_uploader.CanvasUtil(self.canvasPath, self.dotEnvPath, self.tokenType, self.userType)
-
             self.canvasWrapper = canvas.CanvasWrapper(self.canvasBasePath, self.dotEnvPath, self.userType)
         except:
             print("Something went wrong, either the canvas.env does not exist or it does not contain a token with the type TOKEN")
@@ -165,6 +149,8 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         for i in range(0,3):
             self.containerView.resizeColumnToContents(i)
 
+
+
     def showAssignments(self, courseItem):
         #replace the model with a list of assignments for the course referenced in the item
         course = courseItem.text()
@@ -176,7 +162,6 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         
         if course not in self.assignmentDict.keys() or not self.assignmentDict[course]:
             #cache the assignments for each course to reduce wait times
-
             self.assignmentDict[course] = self.canvasWrapper.get_assignment_list(self.courseDict[course])
 
         assignments = self.assignmentDict[course]

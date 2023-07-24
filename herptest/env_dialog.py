@@ -9,6 +9,8 @@ class EnvDialog:
         self.generateEnvLoadScreen()
         self.exit_call = exit_call
 
+
+
     def generateEnvLoadScreen(self):
         self.layout = QtWidgets.QVBoxLayout()
         self.entryGroup = QtWidgets.QGridLayout()
@@ -32,10 +34,10 @@ class EnvDialog:
         self.layout.addLayout(self.entryGroup)
 
 
+
     def handleEnvLoad(self):
         token = self.envEntry.text() 
         if len(token) == 64+5 and token[4] == "~":
-            #haha nice
             ew = env_wrapper.EnvWrapper()
             ew.set_env(token, "TOKEN")
             self.exit_call()

@@ -7,7 +7,6 @@ class CanvasUploadPage(canvas_interface.AbstractCanvasInterface):
 
     def __init__(self, user_type):
         super().__init__(user_type=user_type)
-
         self.fileReady = False
 
     def createControls(self):
@@ -62,15 +61,21 @@ class CanvasUploadPage(canvas_interface.AbstractCanvasInterface):
         self.layout.setAlignment(self.uploadContainer, QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
         self.layout.addLayout(self.uploadContainer)
 
+
+
     def onSelect(self):
         #called in the handleSelect method of the parent, we need to invoke approveUpload()
         self.approveUpload()
+
+
 
     def approveUpload(self):
         if self.fileReady and self.assignmentReady:
             self.uploadButton.setEnabled(True)
         else:
             self.uploadButton.setEnabled(False)
+
+
 
     def uploadFilePicker(self):
         dialog = QtWidgets.QFileDialog(self)
@@ -84,12 +89,11 @@ class CanvasUploadPage(canvas_interface.AbstractCanvasInterface):
             self.fileReady = True
         self.approveUpload()
    
+
+
     def handleUpload(self):
-        #can we do this in a worker thread? maybe
         #this method uses the canvasWrapper attributes of the parent class
         if self.modeSelectTests.checkState() == QtCore.Qt.Checked:
-            #test results mode, call matty's code
-            #print("test suite mode!")
             try:
                 self.late_policy = list(map(float, self.lateField.text().split()))
                 self.canvasWrapper.push_grades(self.currentCourse, self.currentAssignment, self.uploadPath, self.late_policy)
@@ -99,21 +103,17 @@ class CanvasUploadPage(canvas_interface.AbstractCanvasInterface):
                 success_dialog.exec_()
             except ValueError:
                 print("-=- Invalid late policy (check for non-space, non-float values). Please input again.-=-")
-
                 late_dialog = QtWidgets.QMessageBox()
                 late_dialog.setText('Check for non-space, non-float values in the late policy input box.')
                 late_dialog.setWindowTitle('Invalid late policy!')
                 late_dialog.exec_()
 
-        elif self.modeSelectRubric.checkState() == QtCore.Qt.Checked:
-            #rubric mode, call tyler's code
-            #print("rubric mode!")
-            
+        elif self.modeSelectRubric.checkState() == QtCore.Qt.Checked:            
             self.canvasWrapper.process_and_upload_file(self.currentCourseId, self.currentAssignment, self.uploadPath)
+        
         else:
             #neither was selected, create a warning dialog and do nothing
             dialog = QtWidgets.QMessageBox()
             dialog.setText('Select either "Structured Rubric" or "Test Suite Results " mode in order to upload.')
             dialog.setWindowTitle('Select an Upload Mode!')
             dialog.exec_()
-        #print("upload {}".format(self.uploadPath))

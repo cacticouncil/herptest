@@ -8,9 +8,10 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
     #A generic interface for canvas assignments/ courses without any controls
     # used in autopullElmaPage and canvasUploadPage
 
-    def __init__(self):
+    def __init__(self, user_type):
         super().__init__()
 
+        #self.userType = user_type
         self.courseDict = None
         self.assignmentDict = {}
         #init trackers, updating this makes it simpler to pass this data to upload
@@ -19,7 +20,7 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         self.currentAssignment = None
         self.assignmentReady = False
         self.canvasEnvMissing = False
-        self.setupCanvasInstances()
+        self.setupCanvasInstances(user_type=user_type)
 
         if self.canvasEnvMissing:
             #setupCanvasInstances sets this true if there was an issue with setup, show the dialog to fetch the env
@@ -78,7 +79,13 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
             courseIdIndex = self.activeModel.itemFromIndex(index.siblingAtColumn(1))
             self.currentCourseId = courseIdIndex.text()
 
-            self.showAssignments(courseNameIndex)
+            try:
+                self.showAssignments(courseNameIndex)
+            except:
+                late_dialog = QtWidgets.QMessageBox()
+                late_dialog.setText('Please add an assignment to this course on Canvas or choose another course.')
+                late_dialog.setWindowTitle('Selected course has no assignments!')
+                late_dialog.exec_()
         elif self.mode == "assignments":
             assn = self.activeModel.itemFromIndex(index.siblingAtColumn(0)).text()
             if assn.find("<-") == -1:
@@ -101,20 +108,21 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         pass
 
 
-    def setupCanvasInstances(self):
-        self.canvasUtil = None
+    def setupCanvasInstances(self, user_type):
+        self.canvasWrapper = None
         self.canvasPath = "https://ufl.instructure.com/api/v1"
         self.canvasBasePath = "https://ufl.instructure.com"
         self.dotEnvPath = "canvas.env"
         self.tokenType = "TOKEN"
         self.established = False
+        self.userType = user_type
         try:
-            userType = pyautogui.confirm('View as a TA or a Teacher?', 'Select TA or Teacher', ['TA', 'Teacher']).lower()
-            #userType = "TA"
+            # self.userType = pyautogui.confirm('View as a TA or a Teacher?', 'Select TA or Teacher', ['TA', 'Teacher']).lower()
+            # userType = "TA"
 
-            self.canvasUtil = grade_csv_uploader.CanvasUtil(self.canvasPath, self.dotEnvPath, self.tokenType, userType)
+            # self.canvasUtil = grade_csv_uploader.CanvasUtil(self.canvasPath, self.dotEnvPath, self.tokenType, self.userType)
 
-            self.canvasWrapper = canvas.CanvasWrapper(self.canvasBasePath, self.dotEnvPath, userType)
+            self.canvasWrapper = canvas.CanvasWrapper(self.canvasBasePath, self.dotEnvPath, self.userType)
         except:
             print("Something went wrong, either the canvas.env does not exist or it does not contain a token with the type TOKEN")
             self.canvasEnvMissing = True
@@ -130,7 +138,7 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
 
         if not self.courseDict:
             #this only activates once per instance (to avoid slow loading times)
-            self.courseDict = self.canvasUtil.get_courses_this_semester() # dictionary with keys:course name, values:course id
+            self.courseDict = self.canvasWrapper.get_courses_this_semester() # dictionary with keys:course name, values:course id
 
         if len(self.courseDict.keys()) == 0:
             #No active courses available
@@ -168,8 +176,9 @@ class AbstractCanvasInterface(QtWidgets.QWidget):
         
         if course not in self.assignmentDict.keys() or not self.assignmentDict[course]:
             #cache the assignments for each course to reduce wait times
-            self.assignmentDict[course] = self.canvasUtil.get_assignment_list(self.courseDict[course])
-        
+
+            self.assignmentDict[course] = self.canvasWrapper.get_assignment_list(self.courseDict[course])
+
         assignments = self.assignmentDict[course]
 
         backSelect = QtGui.QStandardItem("<- Return to Courses")

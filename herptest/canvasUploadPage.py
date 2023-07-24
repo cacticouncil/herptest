@@ -5,8 +5,8 @@ from herptest import canvas_interface
 
 class CanvasUploadPage(canvas_interface.AbstractCanvasInterface):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, user_type):
+        super().__init__(user_type=user_type)
 
         self.fileReady = False
 
@@ -38,7 +38,7 @@ class CanvasUploadPage(canvas_interface.AbstractCanvasInterface):
         self.uploadButton.clicked.connect(self.handleUpload)
         self.uploadButton.setEnabled(False)
 
-        self.lateLabel = QtWidgets.QLabel("Specify late policy as days/points deducted single-spaced list")
+        self.lateLabel = QtWidgets.QLabel("Specify late policy as days/%points deducted single-spaced list")
         self.lateLabel.setMaximumHeight(20)
         self.lateField = QtWidgets.QLineEdit()
 
@@ -86,7 +86,7 @@ class CanvasUploadPage(canvas_interface.AbstractCanvasInterface):
    
     def handleUpload(self):
         #can we do this in a worker thread? maybe
-        #this method uses the canvasWrapper and canvasUtil attributes of the parent class
+        #this method uses the canvasWrapper attributes of the parent class
         if self.modeSelectTests.checkState() == QtCore.Qt.Checked:
             #test results mode, call matty's code
             #print("test suite mode!")
@@ -109,7 +109,7 @@ class CanvasUploadPage(canvas_interface.AbstractCanvasInterface):
             #rubric mode, call tyler's code
             #print("rubric mode!")
             
-            self.canvasUtil.process_and_upload_file(self.currentCourseId, self.currentAssignment, self.uploadPath)
+            self.canvasWrapper.process_and_upload_file(self.currentCourseId, self.currentAssignment, self.uploadPath)
         else:
             #neither was selected, create a warning dialog and do nothing
             dialog = QtWidgets.QMessageBox()

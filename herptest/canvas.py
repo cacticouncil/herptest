@@ -13,6 +13,7 @@ from herptest.env_wrapper import EnvWrapper
 # For testing purposes- turn off when not testing
 testStudent = True
 
+
 class Rubric:
     def __init__(self):
         self.criteria: list[Criterion] = []
@@ -43,32 +44,37 @@ class Student:
         print(f"Grade: {self.last_name}")
         print(f"Rubric: {self.rubric}")
 
-class CanvasWrapper:
-    def __init__(self, API_URL, env_path, user_type, token_type="TOKEN"): #Initializes CanvasWrapper object which stores an authenticated CanvasAPI Canvas object
+
+class CanvasWrapper:    
+    #Initializes CanvasWrapper object which stores an authenticated CanvasAPI Canvas object
+    def __init__(self, API_URL, env_path, user_type, token_type="TOKEN"):
         self.canv_url = API_URL
         load_dotenv(env_path)
         self.canv_token = os.getenv(token_type)
         self.canv = Canvas(API_URL, self.canv_token)
         self.userType = user_type
 
-    # Leave as tbd for later okay Luna	
-    # def get_courses(self): #Get all courses with enrollment type of whatever is passed in	
-    #     return self.canv.get_courses(enrollment_type=self.userType)	
-    def get_courses(self): #Get all courses with enrollment type of teacher
-        # return self.canv.get_courses(enrollment_type='teacher')	
-        return self.canv.get_courses(enrollment_state='active', enrollment_type=self.userType)
-    
-    def get_assignments(self, course): #Get all assignments in a course using the passed in course ID
-        return self.canv.get_course(course).get_assignments()
-    #equivalent to get_assignment_list
 
-    def get_students(self, course): #Get all students in a course using the passed in course ID
+    # Chosen by User at boot (options are 'teacher' and 'ta') 
+    def get_courses(self):
+        return self.canv.get_courses(enrollment_type=self.userType)
+    
+
+    #Get all assignments in a course using the passed-in course ID
+    def get_assignments(self, course):
+        return self.canv.get_course(course).get_assignments()
+
+
+    #Get all students in a course using the passed in course ID
+    def get_students(self, course):
         students = []
         for student in self.canv.get_course(course).get_users(enrollment_type='student'):
             students.append(student.name.split(' ') + [student.id])
         return students
 
-    def get_results(self, path): #Get the results CSV in the format [['studentname', student_ID, grade]]
+
+    #Get the results CSV in the format [['studentname', student_ID, grade]]
+    def get_results(self, path):
         results = []
         with open(path, 'r') as _summary:
             csv_reader = reader(_summary)
@@ -79,7 +85,8 @@ class CanvasWrapper:
         return results
 
 
-    def get_download_link(self, _course, assignment): #Get submissions.zip download link from a given course assignment using the passed in course name and assignment name
+    #Get submissions.zip download link from a given course assignment using the passed in course name and assignment name
+    def get_download_link(self, _course, assignment):
         # default directory- recreate if already exists
         subdir = os.getcwd() + "/submissions"
         if(os.path.exists(subdir)):
@@ -87,16 +94,18 @@ class CanvasWrapper:
         else:
             os.mkdir(subdir)
         # UserID : lastnamefirstname
+        # Create a dictionary of students' names and their student ID
         names = {1267749: 'studenttest'}
         for courses in self.get_courses():
             if courses.name == _course:
                 for user in courses.get_users():
                     splitName = user.name.split()
                     names[user.id] = splitName[1].lower() + splitName[0].lower()
+
+        # After the library is created, get the correct assignment, and whether it needs a rubric
         for assn in self.get_assignments(list(course.id for course in self.get_courses() if course.name == _course)[0]):
             if(assignment == assn.name):
                 allSubmissions = assn.get_submissions()
-
                 try:
                     if(assn.use_rubric_for_grading):
                         print("Downloading Grading rubric")
@@ -106,6 +115,9 @@ class CanvasWrapper:
                 except:
                     print("Does not use a rubric for grading")
 
+                # Download each submission, and place them in the submissions folder
+                # Append LATE if late
+                # Once all filers are downloaded, ZIP them
                 for subm in allSubmissions:
                     for attch in subm.attachments:
                         submissionFile = requests.get(attch.url)
@@ -120,23 +132,19 @@ class CanvasWrapper:
                         shutil.make_archive("submissions", 'zip', subdir)
                 return assn.submissions_download_url
             
-    def download_submissions(self, _course, assignment, path): #Automatically download submissions.zip from a course assignment (course name, assignment name) to the given path
+            
+    #Automatically download submissions.zip from a course assignment (course name, assignment name) to the given path
+    def download_submissions(self, _course, assignment, path):
         for assn in self.get_assignments(list(course.id for course in self.get_courses() if course.name == _course)[0]):
             if(assignment == assn.name):
-                # Retrofit this code to actually authenticate
-                #r = requests.get(assn.submissions_download_url, auth=grade_csv_uploader.BearerAuth(self.canv_token))
-                #open(path, 'wb').write(r.content)
-
                 allSubmissions = assn.get_submissions()
                 for subm in allSubmissions:
                     for attch in subm.attachments:
                         print(attch.url)
-                
-                #this code works on matty's machine apparently,  but nowhere else
-                #urllib.request.urlretrieve(assn.submissions_download_url, path)
 
 
-    def push_grades(self, _course, assignment, path, late_policy): #Push grades to Canvas assignment (course name, assignment name) using the summary.csv from the given path
+    #Push grades to Canvas assignment (course name, assignment name) using the summary.csv from the given path
+    def push_grades(self, _course, assignment, path, late_policy):
         try:
             results = self.get_results(path)
         except:
@@ -148,9 +156,6 @@ class CanvasWrapper:
             if(assignment == assn.name):
                 # Setting up rubric functionality
                 counter = 0
-                # print("\nFormat of rubric details:", *assn.rubric_settings, "\nID:", assn.rubric_settings["id"], "\n\n")
-                # print(*assn.rubric)
-
                 # Add attribute use_rubric_for_grading and set to False if not present (prevents exceptions)
                 try:
                     test = assn.use_rubric_for_grading
@@ -192,7 +197,7 @@ class CanvasWrapper:
                             sub.edit(
                                 comment = {
                                     #Have commented when testing or a lot of comments will appear :(
-                                    'text_comment' : "HELP ME"
+                                    #'text_comment' : "HELP ME"
                                 },
                                 submission = {
                                     'posted_grade' : str(res[2]) + "%"
@@ -222,7 +227,8 @@ class CanvasWrapper:
                                         rubric_assessment={rubric}
                                     )
                                     print(rubric.rubric_assessment)
-                                    
+
+
     def get_courses_this_semester(self) -> dict:
         """
         Get dictionary (name -> id) of courses in this semester
@@ -237,6 +243,7 @@ class CanvasWrapper:
                 pass
         return result
 
+
     def get_section_ids(self, course_id: str) -> list:
         """
         Get a list of all section IDs in a specific course
@@ -248,6 +255,7 @@ class CanvasWrapper:
                         section_ids.append(section.id)
         return section_ids
 
+
     def get_assignment_id_by_name(self, course_id: str, assignment_name: str) -> str:
         """
         Get the id of the first assignment with a name that matches the input
@@ -257,8 +265,8 @@ class CanvasWrapper:
                 if str(assignment.name).lower().count(assignment_name.lower()):
                     print(f"| Found assignment: {assignment.name}")
                     return str(assignment.id)
-
         raise Exception("ERROR: No matching assignment found!")
+
 
     def get_assignment_list(self, course_id: str) -> dict:
         """
@@ -271,28 +279,29 @@ class CanvasWrapper:
 
         assignment_list = {}
         for assignment in assignments:
-            #print(f"| Found assignment: {assignment['name']},{assignment['id']}")
             assignment_list[assignment.name] = assignment.id
 
         if len(assignment_list) == 0:
             raise Exception("ERROR: No assignments found!")
-
+        
         return assignment_list
+    
 
     def get_student_ids_by_section(self, course_id: str, section_id: str, results: dict):
         """
         Get list of students from a particular section (by Canvas supplied Section ID) and store them in the dictionary
         """
-
         section = self.canv.get_course(course_id).get_section(section_id)
         student_ids = []
         if section.students is not None:
             for student in section.students:
                 results[str(student.name).lower()] = student.id
 
+
     def get_rubric_id(self, course_id: str, assignment_id: str) -> str:
         assignment = self.canv.get_course(course_id).get_assignment(assignment_id)
         return assignment.rubric_settings.id
+
 
     def generate_rubric(self, course_id: str, rubric_id: str) -> Rubric:
         result_rubric = Rubric()
@@ -313,8 +322,8 @@ class CanvasWrapper:
                 temp_criterion.ratings.append(temp_rating)
 
             result_rubric.criteria.append(temp_criterion)
-
         return result_rubric
+
 
     def populate_students_from_csv(self, csv_path: str) -> list:
         students = []
@@ -341,23 +350,18 @@ class CanvasWrapper:
                     students.append(student)
         return students
 
-    def upload_grades(self, course_id: str, user_ids: dict, assignment_id: str, students_from_file: list,
-                      rubric: Rubric):
-        counter = 0
 
+    def upload_grades(self, course_id: str, user_ids: dict, assignment_id: str, students_from_file: list, rubric: Rubric):
+        counter = 0
         for student in students_from_file:
             student_name = f"{student.first_name} {student.last_name}".lower()
 
             if student_name in user_ids:
-
                 content = self.canv.get_course(course_id).get_assignment(assignment_id).get_submission(user_ids[student_name])
 
                 # PROMPT WHEN OVERWRITING GRADES
                 if content.grade is not None:
                     print(f"{student_name}: grade not null!")
-                    # print("Confirm grade replacement with 'Y'.")
-                    # if input().lower() != 'y':
-                    #     sys.exit(0)
                     print(f"replacing grade of {student_name}")
 
                 payload = {}
@@ -376,10 +380,9 @@ class CanvasWrapper:
                     payload[f"rubric_assessment.{criterion.id}.rating_id"] = rating_id_chosen
 
                 self.canv.get_course(course_id).get_assignment(assignment_id).get_submission(user_ids[student_name]).edit(params=payload)
-
-
                 counter = counter + 1
                 print(f"{counter} student(s) graded.")
+
 
     def process_and_upload_file(self, course_id: str, assignment_name: str, csv_path: str):
         section_ids = self.get_section_ids(course_id)
@@ -395,6 +398,8 @@ class CanvasWrapper:
             self.upload_grades(course_id, user_ids, assignment_id, students_from_file, rubric_format)
         except:
             return -1
+        
+
 def env_setup():
     e = EnvWrapper()
     print("-=- Welcome to the Canvas API Key setup tool, you will be prompted to enter your Canvas key and your Canvas Beta key -=-")
@@ -409,6 +414,7 @@ def parse_arguments():
     config = parser.parse_args(sys.argv[1:])
     config.logformat = "%(message)s"
     return config
+
 
 def main():
     # consts that can be swapped out if changing use case.

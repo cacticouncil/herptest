@@ -35,12 +35,15 @@ class PipeSet:
         self.pipe_in, self.pipe_out = os.pipe()
 
 
+
     def write(self, bytes):
         os.write(self.pipe_out, bytes)
 
 
+
     def read(self, maxbytes = DEFAULT_MAX_READ):
         return os.read(self.pipe_in, maxbytes)
+
 
 
     def print(self, *argv, **kwargs):
@@ -56,9 +59,11 @@ class PipeSet:
         self.write(message.encode('utf-8'))
 
 
+
     def println(self, *argv, **kwargs):
         kwargs['end'] = '\n'
         self.print(*argv, **kwargs)
+
 
 
 class SelectiveFileHandler(logging.FileHandler):
@@ -73,6 +78,7 @@ class SelectiveFileHandler(logging.FileHandler):
         logging.FileHandler.__init__(self, filename, mode, encoding, delay)
 
 
+
     def emit(self, record):
         if record.levelno == logging.CRITICAL and self._CRITICAL or \
           record.levelno == logging.ERROR and self._ERROR or \
@@ -82,6 +88,7 @@ class SelectiveFileHandler(logging.FileHandler):
             if self._add_level:
                 record.msg = "[%s] %s" % (record.levelname, record.msg)
             logging.FileHandler.emit(self, record)
+
 
 
 class SelectiveStreamHandler(logging.StreamHandler):
@@ -96,6 +103,7 @@ class SelectiveStreamHandler(logging.StreamHandler):
         logging.StreamHandler.__init__(self, stream)
 
 
+
     def emit(self, record):
         if record.levelno == logging.CRITICAL and self._CRITICAL or \
           record.levelno == logging.ERROR and self._ERROR or \
@@ -107,10 +115,12 @@ class SelectiveStreamHandler(logging.StreamHandler):
             logging.StreamHandler.emit(self, record)
 
 
+
 def data_to_file(data, filename):
     with open(filename, 'wb+') as my_file:
         my_file.write(data)
         my_file.close()
+
 
 
 def text_to_file(lines, filename):
@@ -120,13 +130,14 @@ def text_to_file(lines, filename):
         my_file.close()
 
 
+
 #TODO: Deprecated; repllace with "text_to_file"
 def write_to_file(lines, filename):
     text_to_file(lines, filename)
-
-
     start_dir = os.getcwd()
     os.chdir(working_dir)
+
+
 
 def load_relative_module(target, neighbor, package_name=None):
     if not os.path.isabs(target):
@@ -134,12 +145,12 @@ def load_relative_module(target, neighbor, package_name=None):
     return load_module(target, package_name)
 
 
+
 def load_module(filename, package_name=None):
     start_dir = os.getcwd()
     mod_dir, mod_file = path.split(filename)
     sys.path.append('./')
     module = None
-
     try:
         if mod_dir:
             os.chdir(mod_dir)
@@ -157,8 +168,8 @@ def load_module(filename, package_name=None):
     finally:
         os.chdir(start_dir)
         sys.path.remove('./')
-
     return module
+
 
 
 def is_file(filename):
@@ -166,6 +177,7 @@ def is_file(filename):
         return filename
     else:
         return None
+
 
 
 def find_library(directory, name):
@@ -185,6 +197,7 @@ def find_library(directory, name):
         is_file(path.join(directory, name, "lib" + name + '.so')))
 
 
+
 # Hack: To get Python to load a DLL temporarily - so that it can be replaced later - we need to load a different name.
 # To do this, we'll make a copy of the library, load it, then dispense with it when we're done.
 def loadTempLibrary(directory, name):
@@ -197,9 +210,11 @@ def loadTempLibrary(directory, name):
     return ctypes.cdll.LoadLibrary(libTemp)
 
 
+
 def load_library(directory, name):
     libPath = find_library(directory, name) or path.join(directory, "lib" + name + '.so')
     return ctypes.CDLL(libPath, mode=ctypes.RTLD_GLOBAL)
+
 
 
 def unload_library(library):

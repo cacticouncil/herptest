@@ -14,7 +14,7 @@ class EnvDialog:
     def generateEnvLoadScreen(self):
         self.layout = QtWidgets.QVBoxLayout()
         self.entryGroup = QtWidgets.QGridLayout()
-        self.envLabel = QtWidgets.QLabel("canvas.env not found! Enter API token below:")
+        self.envLabel = QtWidgets.QLabel("canvas.env not found! Enter API token below, then restart the program:")
         self.envLabel.setFixedHeight(30)
         self.envEntry = QtWidgets.QLineEdit()
 

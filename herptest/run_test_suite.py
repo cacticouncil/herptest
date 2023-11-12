@@ -34,8 +34,28 @@ def parse_arguments():
     parser.add_argument('-w', '--warn', dest='WARN', action='store_true', help='display warning information (console)')
     parser.add_argument('-d', '--debug', dest='DEBUG', action='store_true', help='capture debug information (logfile)')
     parser.add_argument('-s', '--set', dest='set', default="*", help = 'test only projects designated (e.g., *_LATE*)')
+    parser.add_argument('-T', '--tests', nargs=2, dest='set_tests', action="append", metavar=('test_set','test_list'),
+                        default=[], help='testset & tests to run, e.g.: "MySet 1,2,0" (comma-separated); default: all')
+
     config = parser.parse_args(sys.argv[1:])
+    set_test_mapping = {}
+
+    if config.set_tests:
+        for set_id, num_list in config.set_tests:
+            if set_id in set_test_mapping:
+                print("WARNING: repeated set_id '%s' in test list parameter. Skipping." % set_id)
+                continue
+
+            try:
+                num_list = [int(testnum.strip()) for testnum in num_list.split(',')]
+                set_test_mapping[set_id] = num_list
+            except:
+                print("WARNING: Skipping set test list [%s: %s] - incorrect syntax;" % (set_id, num_list))
+                print("Must be comma separated integer list with no spaces (e.g., '4,5,0')")
+                continue
+
     config.logformat = "%(message)s"
+    config.set_tests = set_test_mapping
     return config
 
 
@@ -153,23 +173,33 @@ def run_test_set(test_set, subject, framework, cfg):
     # Prepare data structures and initialize the test set.
     exception_list = []
     set_context = cfg.initialize_test_set(test_set, subject, framework)
-    num_of_tests = test_set.get_num_tests(set_context, subject, framework, cfg)
+    num_of_total_tests = test_set.get_num_tests(set_context, subject, framework, cfg)
     penalty_totals = [0] * (len(test_set.case_penalties) + len(test_set.set_penalties))
+    score = 0
 
-    if not isinstance(num_of_tests, int) or num_of_tests == 0:
+    # Get the total number of tests. If none exist, return an error message.
+    if not isinstance(num_of_total_tests, int) or num_of_total_tests == 0:
         cfg.shutdown_test_set(set_context)
-        return "get_number_of_tests() returned [%s]" % num_of_tests, None, None, exception_list
+        return "get_number_of_tests() returned [%s]" % num_of_total_tests, None, None, exception_list
+
+    # If there are no tests identified yet to be run, generate a default list of all tests.
+    tests_to_run = cfg.runtime.set_tests.get(test_set.id, list(range(0, num_of_total_tests)))
 
     # Add the initial notes at the top (might adjust this later for 'pure' CSV output)
-    data_set = [ [ "Number of tests: %d." % num_of_tests ], [] ]
+    data_set = [["Total number of tests in set: %d." % num_of_total_tests], ["For this run: %s" % tests_to_run], []]
 
     # Prepare the header.
     header = [ 'Test No.', 'Score', 'Message', 'Desc.' ]
     header.extend(["%s-Pen" % penalty[0] for penalty in test_set.case_penalties])
     data_set.append(header)
 
-    score = 0
-    for test_num in range(0, num_of_tests):
+    # Run each test and scale the score accordingly.
+    for test_num in tests_to_run:
+        # Sanity check: is this test number actually among those in the test set? If not, skip it.
+        if test_num >= num_of_total_tests:
+            logging.info("Warning: %d is greater than total number of tests (%d). Skipping." % (test_num, num_of_total_tests))
+            continue
+
         # Set up the row for this test and run it.
         row = [ '%d' % test_num ]
         try:
@@ -178,7 +208,6 @@ def run_test_set(test_set, subject, framework, cfg):
             stack_trace = traceback.format_exc()
             exception_list.append("Test %d, %s: %s\n%s" % (test_num, type(e).__name__, e, stack_trace))
             case_result = 0
-
 
         # If we successfuly completed the run, this should be a number; otherwise, a message.
         if isinstance(case_result, numbers.Number):
@@ -202,7 +231,7 @@ def run_test_set(test_set, subject, framework, cfg):
         for penalty_num, case_penalty in enumerate(test_set.case_penalties):
             penalty_name, magnitude, pen_function = case_penalty
             penalty = pen_function(penalty_num, test_num, set_context, subject, framework, cfg)
-            penalty_totals[penalty_num] += penalty * magnitude * case_score / num_of_tests
+            penalty_totals[penalty_num] += penalty * magnitude * case_score / len(tests_to_run)
             row.append('%.2f%%' % (penalty * 100))
 
         # Add this test data to the data set.
@@ -215,7 +244,7 @@ def run_test_set(test_set, subject, framework, cfg):
 
     # Return the data set, score (proportion), and penalty totals
     cfg.shutdown_test_set(set_context)
-    return data_set, score / num_of_tests, penalty_totals, exception_list
+    return data_set, score / len(tests_to_run), penalty_totals, exception_list
 
 
 # Build the environment components (only need to do this once.)
@@ -375,7 +404,12 @@ def main():
                 logging.error("Error preparing / running %s - %s: %s\n%s" % (submission, type(e).__name__, e, stack_trace))
                 root_logger.removeHandler(file_logger)
                 file_logger.close()
+#                executor.terminate()
+#                executor.join()
                 continue
+
+#            executor.terminate()
+#            executor.join()
 
         # Generate and save individual test score information to results file.
         grand_total = 0.0
@@ -402,7 +436,7 @@ def main():
         time.sleep(2)
 
     cfg.shutdown_framework(framework_context)
-    logging.info("Framework shutdown")
+    logging.info("Framework shutdown\n")
     # Return to where we started at.
     os.chdir(starting_dir)
 

@@ -16,6 +16,7 @@ import pexpect
 import time
 import pyte
 import traceback
+import ptyprocess
 
 import importlib
 import importlib.util
@@ -27,7 +28,7 @@ from subprocess import Popen, PIPE, TimeoutExpired
 DEFAULT_MAX_READ = 1024 * 1024
 
 __ansiterm = None
-
+__DEFAULT_DELAY = 0.1
 
 class PipeSet:
     """Class wrapping python pipes as a set to make it easier to read / write them"""
@@ -125,9 +126,6 @@ def write_to_file(lines, filename):
     text_to_file(lines, filename)
 
 
-    start_dir = os.getcwd()
-    os.chdir(working_dir)
-
 def load_relative_module(target, neighbor, package_name=None):
     if not os.path.isabs(target):
         target = os.path.join(path.abspath(os.path.dirname(neighbor)), target)
@@ -137,13 +135,14 @@ def load_relative_module(target, neighbor, package_name=None):
 def load_module(filename, package_name=None):
     start_dir = os.getcwd()
     mod_dir, mod_file = path.split(filename)
-    sys.path.append('./')
     module = None
 
-    try:
-        if mod_dir:
-            os.chdir(mod_dir)
+    if mod_dir:
+        os.chdir(mod_dir)
+        sys.path.append(mod_dir)
 
+    try:
+        sys.path.append('./')
         module_name = (package_name if package_name else '') + path.splitext(mod_file)[0]
         spec = importlib.util.spec_from_file_location(module_name, mod_file)
         module = importlib.util.module_from_spec(spec)
@@ -155,8 +154,10 @@ def load_module(filename, package_name=None):
         logging.error(type(e).__name__ + ": " + str(e))
         return None
     finally:
+        if mod_dir:
+            sys.path.remove(mod_dir)
+        sys.path.remove("./")
         os.chdir(start_dir)
-        sys.path.remove('./')
 
     return module
 
@@ -406,13 +407,13 @@ def append_csv(filename, row_data, insert_key = False, dialect = 'excel'):
 
 
 # Formats input as list of (delay, string) pairs
-def _prep_input(input):
+def _prep_input(input, default_pre_delay=__DEFAULT_DELAY, default_post_delay=__DEFAULT_DELAY):
     # If the input is just a string, return a simple string
     if type(input) == str:
-        return [(0, input)]
+        return [(default_pre_delay, input, default_post_delay)]
     # If it isn't iterable, try to convert it to a string and pass as input.
     elif not hasattr(input, '__iter__'):
-       return [(0, str(input))]
+       return [(default_pre_delay, str(input), default_post_delay)]
 
     # DEPRECATED CASE: If the list is solely and only a list of strings, concatenate them using new line chars.
     all_strings = True
@@ -421,26 +422,33 @@ def _prep_input(input):
             all_strings = False
             break
     if all_strings:
-        return [(0, "\n".join(input))]
+        return [(default_pre_delay, "\n".join(input), default_post_delay)]
 
     # Finally, if it is iterable (and not the special case), go through each element.
     result = []
     for entry in input:
-        # If this is a (int, object) tuple, get the delay and object serving as input.
-        if type(entry) == tuple and len(entry) == 2 and type(entry[0]) == int:
-            delay = entry[0]
+        # If this is a (number, object, number) tuple, get the delays and object serving as input.
+        if type(entry) == tuple and len(entry) == 3 and isinstance(entry[0], Number) and isinstance(entry[2], Number):
+            pre_delay = entry[0]
             value = entry[1]
+            post_delay = entry[2]
+        elif type(entry) == tuple and len(entry) == 2 and isinstance(entry[0], Number):
+            pre_delay = entry[0]
+            value = entry[1]
+            post_delay = default_post_delay
         # Otherwise, add a delay of zero and make the entry the value.
         else:
-            delay = 0
+            pre_delay = default_pre_delay
             value = entry
+            post_delay = default_post_delay
+
         # Try to convert the value into a string; if that fails, use a placeholder.
         try:
             value = str(value)
         except:
             value = "Unconvertible-%s" % value.__class__.__name__
         # Finally, append to the result list.
-        result.append((delay, value))
+        result.append((pre_delay, value, post_delay))
 
     # Return the result list.
     return result
@@ -512,13 +520,104 @@ def ansi_to_text(text, lines=30, columns=80):
     return "\n".join(screen.display)
 
 
-def get_vt_output(working_dir, command, proc_input, timeout, tokenize=True, keep_lines=False, sleep=False, raw=False, lines=30, columns=80, readsize=1000000):
+#def get_proc_output(working_dir, proc_command, proc_input, timeout, **keywords):
+    # Get keyword parameters, if provided.
+    lines = keywords.pop("lines", 30)
+    columns = keywords.pop("columns", 30)
+    readsize = keywords.pop("readsize", 30)
+
+    # Process the input on the front end.
+    proc_input = _prep_input(proc_input)
+
+    # Ugly hack to make sure the window size is big enough for virtual terminals (ugh).
+    old_rows = os.environ['LINES'] if 'LINES' in os.environ else None
+    old_cols = os.environ['COLUMNS'] if 'COLUMNS' in os.environ else None
+    os.environ['LINES'] = str(lines)
+    os.environ['COLUMNS'] = str(columns)
+    
+    # Grab the current working directory, then change to the target directory.
+    start_dir = os.getcwd()
+    os.chdir(working_dir)
+
+
+
+ #try:
+        # First, start the process; then, after the designated delay, send the data.
+ #       process = Popen(command, stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
+
+ #       for pre_delay, entry, post_delay in proc_input:
+ #           time.sleep(pre_delay)
+ #           process.stdin.write(entry + "\n")
+ #           process.stdin.flush()
+ #           time.sleep(post_delay)
+
+        # After all input has been sent, if the process has not quit, wait - and kill if necessary.
+ #       if process.poll() == None:
+ #           try:
+ #               process.wait(timeout=timeout)
+ #           except TimeoutExpired as e:
+ #               process.kill()
+
+        # Gather the output of the process.
+ #       results = process.communicate(timeout=timeout)[0]
+
+
+
+ #   try:
+        # Start the process, get the output, and return to the original directory.
+ #       process = pexpect.spawn(command[0], command[1:], timeout=timeout)
+
+#        for pre_delay, entry, post_delay in proc_input:
+#            time.sleep(pre_delay)
+#            process.write(entry)
+#            time.sleep(post_delay)
+#            process.sendeof()
+
+        # Give the program enough time to update, then pull the data
+#        if sleep:
+#            time.sleep(timeout)
+
+#        results = process.read_nonblocking(readsize, timeout=timeout).decode()
+#        process.terminate(True)
+
+#        if not raw:
+#            results = ansi_to_text(results, lines, columns)
+#    except Exception as e:
+#        stack_trace = traceback.format_exc()
+#        logging.error("%s: %s\n%s" % (type(e).__name__, e, stack_trace))
+
+#    finally:
+#        os.chdir(start_dir)
+
+        # Restore the terminal size variables.
+#        os.environ['LINES'] = old_rows
+#        os.environ['COLUMNS'] = old_cols
+
+#    if not raw and tokenize:
+#        results = parse_tokens(results)
+#        if not keep_lines:
+#            results = list(itertools.chain(*results))
+
+#    return results
+
+
+#def get_vt_output(working_dir, command, proc_input, timeout, tokenize=True, keep_lines=False, sleep=False, raw=False, lines=30, columns=80):
+
+def get_vt_output(working_dir, command, proc_input, timeout, **keywords):
+    # Get keyword parameters, if provided.
+    lines = keywords.pop("lines", 30)
+    columns = keywords.pop("columns", 80)
+    tokenize = keywords.pop("tokenize", True)
+    keep_lines = keywords.pop("keep_lines", False)
+    sleep = keywords.pop("sleep", False)
+    raw = keywords.pop("raw", False)
+
     # Process the input on the front end.
     proc_input = _prep_input(proc_input)
 
     # Ugly hack to make sure the window size is big enough (ugh).
-    old_rows = os.environ['LINES'] if 'LINES' in os.environ else "25"
-    old_cols = os.environ['COLUMNS'] if 'COLUMNS' in os.environ else "80"
+    old_rows = os.environ['LINES'] if 'LINES' in os.environ else None
+    old_cols = os.environ['COLUMNS'] if 'COLUMNS' in os.environ else None
     os.environ['LINES'] = str(lines)
     os.environ['COLUMNS'] = str(columns)
 
@@ -530,20 +629,36 @@ def get_vt_output(working_dir, command, proc_input, timeout, tokenize=True, keep
         # Start the process, get the output, and return to the original directory.
         process = pexpect.spawn(command[0], command[1:], timeout=timeout)
 
-        for delay, entry in proc_input:
-            time.sleep(delay)
+        for pre_delay, entry, post_delay in proc_input:
+            time.sleep(pre_delay)
             process.write(entry)
+            time.sleep(post_delay)
 
         # Give the program enough time to update, then pull the data
         if sleep:
             time.sleep(timeout)
-        process.flush()
 
-        results = process.read_nonblocking(readsize, timeout=timeout).decode()
+        # Read data from the standard output (looping until there's nothing left).
+        results = b''
+
+        while True:
+            # Read from the file without blocking - just get what's available on each call.
+            try:
+                results += process.read_nonblocking(timeout=timeout)
+            # If the process terminated due to a timeout, log an info message in case it was unexpected.
+            except pexpect.TIMEOUT as e:
+#                logging.info("Timeout when running %s with input %s." % (command, proc_input)) TODO: make not print...
+                break
+            # If we reached the end of the file,
+            except pexpect.EOF:
+                break
+
+        results = results.decode()
         process.terminate(True)
 
         if not raw:
             results = ansi_to_text(results, lines, columns)
+
     except Exception as e:
         stack_trace = traceback.format_exc()
         logging.error("%s: %s\n%s" % (type(e).__name__, e, stack_trace))
@@ -552,10 +667,18 @@ def get_vt_output(working_dir, command, proc_input, timeout, tokenize=True, keep
         os.chdir(start_dir)
 
         # Restore the terminal size variables.
-        os.environ['LINES'] = old_rows
-        os.environ['COLUMNS'] = old_cols
+        if old_rows:
+            os.environ['LINES'] = old_rows
+        else:
+            del os.environ['LINES']
+
+        if old_cols:
+            os.environ['LINES'] = old_cols
+        else:
+            del os.environ['COLUMNS']
 
     if not raw and tokenize:
+    
         results = parse_tokens(results)
         if not keep_lines:
             results = list(itertools.chain(*results))
@@ -564,12 +687,12 @@ def get_vt_output(working_dir, command, proc_input, timeout, tokenize=True, keep
 
 
 ##### CONSOLE OUTPUT COMMAND PROCESSING #####
-def get_py_output(working_dir, command, input, timeout, tokenize=True, keep_lines=False):
+def get_py_output(working_dir, command, py_input, timeout, tokenize=True, keep_lines=False, sleep=False, raw=False):
     command = [command] if isinstance(command, str) else command if hasattr(command, '__iter__') else [str(command)]
-    return get_cmd_output(working_dir, [sys.executable] + command, input, timeout, tokenize, keep_lines)
+    return get_cmd_output(working_dir, [sys.executable] + command, py_input, timeout, tokenize, keep_lines, sleep, raw)
 
 
-def get_cmd_output(working_dir, command, proc_input, timeout, tokenize=True, keep_lines=False):
+def get_cmd_output(working_dir, command, proc_input, timeout, tokenize=True, keep_lines=False, sleep=False, raw=False):
     # Format the input, grab the current working directory, then change to the target directory.
     proc_input = _prep_input(proc_input)
     start_dir = os.getcwd()
@@ -580,10 +703,11 @@ def get_cmd_output(working_dir, command, proc_input, timeout, tokenize=True, kee
         # First, start the process; then, after the designated delay, send the data.
         process = Popen(command, stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
 
-        for delay, entry in proc_input:
-            time.sleep(delay)
+        for pre_delay, entry, post_delay in proc_input:
+            time.sleep(pre_delay)
             process.stdin.write(entry + "\n")
             process.stdin.flush()
+            time.sleep(post_delay)
 
         # After all input has been sent, if the process has not quit, wait - and kill if necessary.
         if process.poll() == None:

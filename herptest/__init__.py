@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from monkeydict import MonkeyDict
 
 
-VERSION = '0.9.9.15'
+VERSION = '0.9.9.17'
 
 # TODO: Make this prettier
 def attr_has_value(base, attr_name):
